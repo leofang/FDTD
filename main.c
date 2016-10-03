@@ -12,7 +12,20 @@ int main(int argc, char **argv)
  
    grid * simulation = initialize_grid(argv[1]);
 
-   print_grid(simulation);
+   for(int j=0; j<simulation->Ny; j++)
+   {
+       for(int i=simulation->nx+1; i<simulation->Ntotal; i++)
+       {
+           
+            //delay term psi(x-2a, t-2a)theta(t-2a)
+            if(j>simulation->nx)
+               simulation->psi[j][i] += square_average(j-simulation->nx, i-simulation->nx, simulation);
+
+       }
+   }
+
+
+//   print_grid(simulation);
 //   print_initial_condition(simulation);
 
 
