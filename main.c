@@ -10,13 +10,13 @@ int main(int argc, char **argv)
       exit(EXIT_FAILURE);
    }
  
-   grid * simulation = initializeGrid(argv[1]);
+   grid * simulation = initialize_grid(argv[1]);
 
-//   printGrid(simulation);
-//   printInitialCondition(simulation);
+   print_grid(simulation);
+//   print_initial_condition(simulation);
 
 
-   freeGrid(simulation);
+   free_grid(simulation);
 
    return EXIT_SUCCESS;
 }

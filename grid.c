@@ -3,10 +3,15 @@
 #include "grid.h"
 
 
-void initialCondition(grid * simulation)
+void initial_condition(grid * simulation)
 {// the initial condition is given in-between x/Delta = [-Nx, Nx] for simplicity
 
     simulation->psit0 = calloc(2*simulation->Nx+1, sizeof(*simulation->psit0));
+    if(!simulation->psit0)
+    { 
+        perror("initialCondition: cannot allocate memory. Abort!\n");
+        exit(EXIT_FAILURE);
+    }
     simulation->psit0_size = 2*simulation->Nx+1;
 
     for(int i=0; i<simulation->psit0_size; i++)
@@ -18,17 +23,27 @@ void initialCondition(grid * simulation)
 }
 
 
-void boundaryCondition(grid * simulation)
+void boundary_condition(grid * simulation)
 {// the boundary conditions is given for first nx+1 columns with 
  // x/Delta=[-(Nx+nx+1),-(Nx+1)] due to the delay term
 
     simulation->psix0 = malloc( simulation->Ny*sizeof(*simulation->psix0) );
+    if(!simulation->psix0)
+    { 
+        perror("boundaryCondition: cannot allocate memory. Abort!\n");
+        exit(EXIT_FAILURE);
+    }
     simulation->psix0_x_size = simulation->nx+1;
     simulation->psix0_y_size = 0;
 
     for(int j=0; j<simulation->Ny; j++)
     {
         simulation->psix0[j] = calloc(simulation->nx+1, sizeof(*simulation->psix0[j])); 
+        if(!simulation->psix0[j])
+        { 
+            fprintf(stderr, "boundaryCondition: cannot allocate memory at t=%d*Delta. Abort!\n", j);
+            exit(EXIT_FAILURE);
+        }
         simulation->psix0_y_size++;
     }
 
@@ -42,14 +57,24 @@ void boundaryCondition(grid * simulation)
 }
 
 
-void initializePsi(grid * simulation)
+void initialize_psi(grid * simulation)
 {
     simulation->psi = malloc( simulation->Ny*sizeof(*simulation->psi) );
+    if(!simulation->psi)
+    { 
+        perror("initializePsi: cannot allocate memory. Abort!\n");
+        exit(EXIT_FAILURE);
+    }
     simulation->psi_x_size = simulation->Ntotal;
     simulation->psi_y_size = 0;
     for(int j=0; j<simulation->Ny; j++)
     {
         simulation->psi[j] = calloc( simulation->Ntotal, sizeof(*simulation->psi[j]) );
+        if(!simulation->psi[j])
+        { 
+            fprintf(stderr, "initializePsi: cannot allocate memory at t=%d*Delta. Abort!\n", j);
+            exit(EXIT_FAILURE);
+        }
         simulation->psi_y_size++;
 
         // take boundary conditions
@@ -63,23 +88,38 @@ void initializePsi(grid * simulation)
 }
 
 
-void freeGrid(grid * simulation)
-{
-    freeKVs(simulation->parameters_key_value_pair);
+void free_initial_boundary_conditions(grid * simulation)
+{//free psit0 and psix0 to save memory
     free(simulation->psit0);
     for(int j=0; j<simulation->Ny; j++)
-    {
-       free(simulation->psi[j]);
        free(simulation->psix0[j]);
-    }
-    free(simulation->psi);
     free(simulation->psix0);
+  
+    //reset
+    simulation->psix0 = NULL;
+    simulation->psit0 = NULL;
+    simulation->psix0_x_size = 0;
+    simulation->psix0_y_size = 0;
+    simulation->psit0_size = 0;
+}
+
+
+void free_grid(grid * simulation)
+{
+    freeKVs(simulation->parameters_key_value_pair);
+
+    //free psit0 and psix0
+    free_initial_boundary_conditions(simulation);
+
+    for(int j=0; j<simulation->Ny; j++)
+       free(simulation->psi[j]);
+    free(simulation->psi);
 
     free(simulation);
 }
 
 
-grid * initializeGrid(const char * filename)
+grid * initialize_grid(const char * filename)
 {
    grid * FDTDsimulation = malloc(sizeof(*FDTDsimulation));
    if(!FDTDsimulation)
@@ -104,15 +144,18 @@ grid * initializeGrid(const char * filename)
    FDTDsimulation->Ly    = (FDTDsimulation->Ny-1) * FDTDsimulation->Delta;
    
    //initialize arrays
-   initialCondition(FDTDsimulation);
-   boundaryCondition(FDTDsimulation);
-   initializePsi(FDTDsimulation);
+   initial_condition(FDTDsimulation);
+   boundary_condition(FDTDsimulation);
+   initialize_psi(FDTDsimulation);
+
+//   //save memory
+//   free_initial_boundary_conditions(FDTDsimulation);
 
    return FDTDsimulation;
 }
 
 
-void printInitialCondition(grid * simulation)
+void print_initial_condition(grid * simulation)
 {
     printf("t=0   ");
     for(int i=0; i<simulation->psit0_size; i++)
@@ -124,7 +167,7 @@ void printInitialCondition(grid * simulation)
 }
 
 
-void printGrid(grid * simulation)
+void print_grid(grid * simulation)
 {
     printf("nx = %d\n", simulation->nx); 
     printf("Nx = %d\n", simulation->Nx); 

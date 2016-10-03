@@ -64,19 +64,14 @@ struct _grid
 typedef struct _grid grid;
 
 
-void initialCondition(grid * simulation);
-
-void boundaryCondition(grid * simulation);
-
-void initializePsi(grid * simulation);
-
-void freeGrid(grid * simulation);
-
-grid * initializeGrid(const char * filename);
-
-void printInitialCondition(grid * simulation);
-
-void printGrid(grid * simulation);
+void initial_condition(grid * simulation);
+void boundary_condition(grid * simulation);
+void initialize_psi(grid * simulation);
+void free_initial_boundary_conditions(grid * simulation);
+void free_grid(grid * simulation);
+grid * initialize_grid(const char * filename);
+void print_initial_condition(grid * simulation);
+void print_grid(grid * simulation);
 
 
 
