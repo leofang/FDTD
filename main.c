@@ -12,8 +12,8 @@ int main(int argc, char **argv)
  
    grid * simulation = initializeGrid(argv[1]);
 
-   printGrid(simulation);
-   printInitialCondition(simulation);
+//   printGrid(simulation);
+//   printInitialCondition(simulation);
 
 
    freeGrid(simulation);

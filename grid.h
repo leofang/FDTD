@@ -9,7 +9,7 @@
 // Create a grid which stores the wavefunction and other relavant information.
 // The layout of the grid should look like this:
 //
-//                  i=0 1 2 3 ... ... nx (nx+1) ... ... ... ... ...  (2Nx+nx+1)
+//      array index i=0 1 2 3 ... ... nx (nx+1) ... ... ... ... ...  (2Nx+nx+1)
 //                    | | | |          \   /                                 \
 // t=(Ny-1)*Delta  ^  * * * * ... * * * * @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
 // t=(Ny-2)*Delta  |  * * * * ... * * * * @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
