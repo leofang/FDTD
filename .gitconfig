@@ -1,3 +1,6 @@
 [user]
         name = Leo Fang
         email = leofang@phy.duke.edu
+[core]
+        editor = vim
+
