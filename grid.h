@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <complex.h> 
 #include "kv.h"
 
 // Create a grid which stores the wavefunction and other relavant information.
@@ -47,9 +48,9 @@ struct _grid
    double Gamma; // qubit decay rate   (in units of 1/Delta) 
 
    //actual info on dynamics
-   double * psit0;  //initial condition psi(x,0) (stored as psi0[x])
-   double ** psi;   //wavefunction psi(x,t) to be computed (stored as psi[t][x])
-   double ** psix0; //boundary condition psi(-L,0) (stored as psix0[t][x])
+   complex * psit0;  //initial condition psi(x,0) (stored as psi0[x])
+   complex ** psi;   //wavefunction psi(x,t) to be computed (stored as psi[t][x])
+   complex ** psix0; //boundary condition psi(-L,0) (stored as psix0[t][x])
    
    //auxiliary parameters
    int psit0_size;   //array size of psit0 

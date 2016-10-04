@@ -1,4 +1,4 @@
-CFLAGS=-Wall -std=gnu99 -pedantic -ggdb3 #-Werror
+CFLAGS=-Wall -std=gnu99 -pedantic -ggdb3 -Wno-comment #-Werror
 SRCS=$(wildcard *.c)
 OBJS=$(patsubst %.c, %.o, $(SRCS))
 PROGRAM=FDTD
@@ -18,4 +18,4 @@ depend:
 
 grid.o: grid.h kv.h
 kv.o: kv.h
-main.o: grid.h kv.h
+main.o: grid.h kv.h dynamics.h

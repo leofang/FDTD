@@ -159,7 +159,7 @@ void print_initial_condition(grid * simulation)
 {
     printf("t=0   ");
     for(int i=0; i<simulation->psit0_size; i++)
-        printf("%.3f ", simulation->psit0[i]);
+        printf("%.2f+%.2fI ", creal(simulation->psit0[i]), cimag(simulation->psit0[i]));
     printf("\n      ");
     for(int i=-simulation->Nx; i<=simulation->Nx; i++)
         printf("x=%.2f ", i*simulation->Delta);
@@ -184,7 +184,7 @@ void print_grid(grid * simulation)
     {
         for(int i=0; i<simulation->Ntotal; i++)
         {
-            printf("%.2f ", simulation->psi[j][i]);
+            printf("%.2f+%.2fI ", creal(simulation->psi[j][i]), cimag(simulation->psi[j][i]));
         }
         printf("\n");
     }
