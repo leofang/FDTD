@@ -163,6 +163,7 @@ grid * initialize_grid(const char * filename)
    FDTDsimulation->Ly            = (FDTDsimulation->Ny-1) * FDTDsimulation->Delta;
    FDTDsimulation->plus_a_index  = FDTDsimulation->Nx + 3*FDTDsimulation->nx/2 + 1;
    FDTDsimulation->minus_a_index = FDTDsimulation->Nx + FDTDsimulation->nx/2 + 1;
+   FDTDsimulation->origin_index  = FDTDsimulation->Nx + FDTDsimulation->nx + 1;
 
    //check the validity of parameters
    sanity_check(FDTDsimulation);

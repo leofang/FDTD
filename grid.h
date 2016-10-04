@@ -37,15 +37,16 @@
 struct _grid 
 {
    //spacetime parameters
-   int nx;           // nx=2a/Delta
-   int Nx;           // defined such that total grid points (to be solved) along x is 2Nx+1
-   int Ntotal;       // total grid points along x, which is 2Nx+nx+2 
-   int Ny;           // total grid points along t
-   double Delta;     // grid size
-   double Lx;        // Lx = 2Nx*Delta 
-   double Ly;        // Ly = (Ny-1)*Delta
-   int plus_a_index; // array index for x=+a
+   int nx;            // nx=2a/Delta
+   int Nx;            // defined such that total grid points (to be solved) along x is 2Nx+1
+   int Ntotal;        // total grid points along x, which is 2Nx+nx+2 
+   int Ny;            // total grid points along t
+   double Delta;      // grid size
+   double Lx;         // Lx = 2Nx*Delta 
+   double Ly;         // Ly = (Ny-1)*Delta
+   int plus_a_index;  // array index for x=+a
    int minus_a_index; // array index for x=-a
+   int origin_index;  // array index for x=0 
 
    //physics parameters
    double k;     // incident frequency (in units of 1/Delta)   
