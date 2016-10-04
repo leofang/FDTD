@@ -88,6 +88,25 @@ void initialize_psi(grid * simulation)
 }
 
 
+void sanity_check(grid * simulation)
+{
+    //nx must be multiple of 2
+    if(simulation->nx % 2) 
+    {
+        fprintf(stderr, "sanity_check: nx must be an integer multiple of 2. Abort!\n");
+        exit(EXIT_FAILURE);
+    }   
+
+    //nx<=2Nx
+    if(simulation->nx > 2*simulation->Nx)
+    {
+        fprintf(stderr, "sanity_check: nx must be smaller than, or at most equal to, twice of Nx (nx<=2Nx). Abort!\n");
+        exit(EXIT_FAILURE);
+    }   
+
+}
+
+
 void free_initial_boundary_conditions(grid * simulation)
 {//free psit0 and psix0 to save memory
     free(simulation->psit0);
@@ -132,17 +151,22 @@ grid * initialize_grid(const char * filename)
    FDTDsimulation->parameters_key_value_pair = readKVs(filename);
 
    //initialize from the input parameters
-   FDTDsimulation->nx    = atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "nx"));
-   FDTDsimulation->Nx    = atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "Nx"));
-   FDTDsimulation->Ntotal= 2 * FDTDsimulation->Nx + FDTDsimulation->nx + 2;
-   FDTDsimulation->Ny    = atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "Ny"));
-   FDTDsimulation->Delta = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "Delta"), NULL);
-   FDTDsimulation->k     = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "k"), NULL);
-   FDTDsimulation->w0    = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "w0"), NULL);
-   FDTDsimulation->Gamma = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "Gamma"), NULL);
-   FDTDsimulation->Lx    = 2 * FDTDsimulation->Nx * FDTDsimulation->Delta;
-   FDTDsimulation->Ly    = (FDTDsimulation->Ny-1) * FDTDsimulation->Delta;
-   
+   FDTDsimulation->nx            = atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "nx"));
+   FDTDsimulation->Nx            = atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "Nx"));
+   FDTDsimulation->Ntotal        = 2 * FDTDsimulation->Nx + FDTDsimulation->nx + 2;
+   FDTDsimulation->Ny            = atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "Ny"));
+   FDTDsimulation->Delta         = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "Delta"), NULL);
+   FDTDsimulation->k             = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "k"), NULL);
+   FDTDsimulation->w0            = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "w0"), NULL);
+   FDTDsimulation->Gamma         = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "Gamma"), NULL);
+   FDTDsimulation->Lx            = 2 * FDTDsimulation->Nx * FDTDsimulation->Delta;
+   FDTDsimulation->Ly            = (FDTDsimulation->Ny-1) * FDTDsimulation->Delta;
+   FDTDsimulation->plus_a_index  = FDTDsimulation->Nx + 3*FDTDsimulation->nx/2 + 1;
+   FDTDsimulation->minus_a_index = FDTDsimulation->Nx + FDTDsimulation->nx/2 + 1;
+
+   //check the validity of parameters
+   sanity_check(FDTDsimulation);
+
    //initialize arrays
    initial_condition(FDTDsimulation);
    boundary_condition(FDTDsimulation);

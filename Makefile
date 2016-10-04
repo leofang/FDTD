@@ -1,4 +1,4 @@
-CFLAGS=-Wall -std=gnu99 -pedantic -ggdb3 -Wno-comment #-Werror
+CFLAGS=-Wall -std=gnu99 -pedantic -Wno-comment -ggdb3 #-O3 -Werror
 SRCS=$(wildcard *.c)
 OBJS=$(patsubst %.c, %.o, $(SRCS))
 PROGRAM=FDTD

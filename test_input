@@ -1,5 +1,5 @@
-nx = 1
-Nx = 10
+nx = 2
+Nx = 8
 Ny = 5
 Delta = 0.5
 k = 1.98    
