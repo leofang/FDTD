@@ -20,6 +20,8 @@ int main(int argc, char **argv)
    {
        for(int i=simulation->nx+1; i<simulation->Ntotal; i++) //start from x=-Nx*Delta
        {
+         //if i is NOT next to the qubits   
+ 
             //free propagation (decay included)
             simulation->psi[j][i] = (1./simulation->Delta-0.25*W)*simulation->psi[j-1][i-1]   \
                                     -0.25*W*(simulation->psi[j-1][i]+simulation->psi[j][i-1]);
@@ -32,8 +34,8 @@ int main(int argc, char **argv)
             if( (i>simulation->minus_a_index) && (j-i>=-simulation->minus_a_index) )
             { 
                 double on_light_cone = (j-i == -simulation->minus_a_index?0.5:1.0);
-                simulation->psi[j][i] -= 0.5*simulation->Gamma*bar_average(2*simulation->origin_index-i-simulation->nx, \
-                                         j+(2*simulation->origin_index-i)-simulation->nx/2, simulation)*on_light_cone; //CHECK!!!!
+                simulation->psi[j][i] -= 0.5*simulation->Gamma*bar_average(j-(i-simulation->origin_index)-simulation->nx/2, \
+                                         2*simulation->origin_index-i-simulation->nx, simulation)*on_light_cone; //CHECK!!!!
             }
 
             //left light cone No.2: -psi(-x, t-x-a)theta(x+a)theta(t-x-a)
@@ -46,6 +48,9 @@ int main(int argc, char **argv)
 
             //prefactor
             simulation->psi[j][i] /= (1./simulation->Delta+0.25*W);
+
+         //if i IS next to qubits (so x=-a+Delta or x=+a+Delta)
+ 
        }
    }
 
