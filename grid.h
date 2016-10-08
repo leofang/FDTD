@@ -80,6 +80,7 @@ void free_grid(grid * simulation);
 grid * initialize_grid(const char * filename);
 void print_initial_condition(grid * simulation);
 void print_grid(grid * simulation);
+void print_psi(grid * simulation);
 
 
 

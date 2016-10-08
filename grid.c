@@ -1,6 +1,53 @@
 #include <stdlib.h>
+#include <math.h>
 #include "kv.h"
 #include "grid.h"
+
+
+// Compute incomplete Gamma function gamma(n,x) (Arfken, 5th ed, P.661).
+// Note that gamma(n,x) is different from Gamma(n,x)! ( gamma(n,x)+Gamma(n,x)=Gamma(n) )
+complex incomplete_gamma(int n, complex x)
+{
+   if(n<=0)
+   {
+      fprintf(stderr, "Error in incomplete_gamma: n must >= 1. Abort!\n");
+      exit(EXIT_FAILURE);
+   }
+
+   complex sum = 0;
+
+   for(int i=0; i<n; i++)
+      sum += cpow(x, i)/tgamma(i+1);
+
+   return tgamma(n)*(1.-cexp(-x)*sum);
+}
+
+
+// This function returns the solution psi[j][i] in x<-a subject incident plane wave
+complex plane_wave_BC(int j, int i, grid * simulation)
+{
+    double x = (i-simulation->origin_index)*simulation->Delta; //check!!!
+    double t = j*simulation->Delta;
+    double td = simulation->nx*simulation->Delta;
+    double k = simulation->k;
+    double w0 = simulation->w0;
+    double Gamma = simulation->Gamma;
+    complex p = k - w0 + 0.5*I*Gamma;
+
+    complex e_t = I*sqrt(0.5*Gamma)*cexp(-0.5*I*k*td)*(cexp(-I*k*t)-cexp(-I*w0*t-0.5*Gamma*t))/p;
+    complex sum = 0;
+
+    for(int n=1; n<=(j/simulation->nx); n++)
+    {
+        sum += cpow(0.5*Gamma, n-0.5)/(tgamma(n+1)*cpow(p, n+1)) * \
+               ( cpow(p, n+1)*cpow(t-n*td, n)*cexp(n*(I*w0*td+0.5*Gamma*td)-I*w0*t-0.5*Gamma*t)
+                 + cpow(I, n)*(k-w0)*incomplete_gamma(n+1, -I*p*(t-n*td))*cexp(I*n*k*td-I*k*t));
+    }
+    e_t -= cexp(-0.5*I*k*td)*sum;
+    e_t *= sqrt(2.)*cexp(I*k*(x-t)); // psi(x,t) = sqrt(2)e^{ik(x-t)}*e(t)
+
+    return e_t;
+}
 
 
 void initial_condition(grid * simulation)
@@ -14,12 +61,11 @@ void initial_condition(grid * simulation)
     }
     simulation->psit0_size = 2*simulation->Nx+1;
 
-    for(int i=0; i<simulation->psit0_size; i++)
-    {
-        simulation->psit0[i] = i;
-    }
-
-    //Finish it!
+    //TODO: make a flexible option for other initial conditions
+//    for(int i=0; i<simulation->psit0_size; i++)
+//    {
+//        simulation->psit0[i] = 0; //for two-photon plane wave input
+//    }
 }
 
 
@@ -47,13 +93,12 @@ void boundary_condition(grid * simulation)
         simulation->psix0_y_size++;
     }
 
+    //TODO: make a flexible option for other boundary conditions
     for(int j=0; j<simulation->psix0_y_size; j++)
     {
         for(int i=0; i<simulation->psix0_x_size; i++)
-            simulation->psix0[j][i] = i*j;
+            simulation->psix0[j][i] = plane_wave_BC(j, i, simulation);
     }
-
-    //Finish it!!
 }
 
 
@@ -189,6 +234,20 @@ void print_initial_condition(grid * simulation)
     for(int i=-simulation->Nx; i<=simulation->Nx; i++)
         printf("x=%.2f ", i*simulation->Delta);
     printf("\n");
+}
+
+
+void print_psi(grid * simulation)
+{
+    for(int j=simulation->Ny-1; j>=0; j--)
+    {
+        printf("t = %.3f\n", j*simulation->Delta);
+        for(int i=0; i<simulation->Ntotal; i++)
+        {
+            printf("%.3f+%.3fI\n", creal(simulation->psi[j][i]), cimag(simulation->psi[j][i]));
+        }
+        printf("\n");
+    }
 }
 
 

@@ -78,7 +78,7 @@ int main(int argc, char **argv)
        }
    }
 
-
+   print_psi(simulation);
 //   print_grid(simulation);
 //   print_initial_condition(simulation);
 

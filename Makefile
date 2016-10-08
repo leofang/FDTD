@@ -2,9 +2,10 @@ CFLAGS=-Wall -std=gnu99 -pedantic -Wno-comment -ggdb3 #-O3 -Werror
 SRCS=$(wildcard *.c)
 OBJS=$(patsubst %.c, %.o, $(SRCS))
 PROGRAM=FDTD
+LDFLAGS=-lm
 
 $(PROGRAM): $(OBJS)
-	gcc $(CFLAGS) -o $@ $(OBJS)
+	gcc $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
 
 %.o: %.c 
 	gcc -c $(CFLAGS) $<
