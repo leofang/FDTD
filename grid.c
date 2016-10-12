@@ -14,6 +14,10 @@ complex incomplete_gamma(int n, complex x)
       exit(EXIT_FAILURE);
    }
 
+   //cpow cannot handle this special point; cpow(x,0)=nan+nan*I when x=0.
+   if(x==0)
+      return 0;
+
    complex sum = 0;
 
    for(int i=0; i<n; i++)
