@@ -56,5 +56,15 @@ complex bar_average(int j, int i, grid * simulation)
 }
 
 
+complex two_photon_input(int i1, int i2, grid * simulation)
+{
+   //TODO: make a flexible choice for different inputs
+
+   double x1 = i1 * simulation->Delta;
+   double x2 = i2 * simulation->Delta;
+
+   //Two-photon plane waves
+   return cexp( I * simulation->k * (x1+x2) );
+}
 
 #endif

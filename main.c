@@ -1,3 +1,4 @@
+#include <math.h>
 #include "grid.h"
 #include "kv.h"
 #include "dynamics.h"
@@ -64,7 +65,22 @@ int main(int argc, char **argv)
                                             2*simulation->origin_index-i+1, simulation)*on_light_cone; 
                }
    
-               //two-photon input:
+               //two-photon input: 2*( chi(x-t,-a-t, 0)-chi(x-t,a-t,0) )
+               if( j-i>=-simulation->minus_a_index ) //it's nonzero only when t-x-a>=0 
+               { 
+                   double on_light_cone = (j-i == -simulation->minus_a_index?0.5:1.0);
+
+                   //double on_origin = (j==0 ? 0.5 : 1.0);
+                   simulation->psi[j][i] += sqrt(simulation->Gamma) * on_light_cone \ 
+                                            * two_photon_input((i-simulation->origin_index)-j, -simulation->nx/2-j, simulation);
+
+                   if(j>simulation->nx)
+                   {
+                   //    double on_delay_line = (j==simulation->nx ? 0.5 : 1.0);
+                       simulation->psi[j][i] -= sqrt(simulation->Gamma) * on_light_cone \ 
+                                                * two_photon_input((i-simulation->origin_index)-j, simulation->nx/2-j, simulation);
+                   }
+               }
    
                //prefactor
                simulation->psi[j][i] /= (1./simulation->Delta+0.25*W);
@@ -78,6 +94,8 @@ int main(int argc, char **argv)
        }
    }
 
+   print_boundary_condition(simulation);
+   printf("******************************************\n");
    print_psi(simulation);
 //   print_grid(simulation);
 //   print_initial_condition(simulation);

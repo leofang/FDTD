@@ -1,7 +1,7 @@
 nx = 2
 Nx = 8
-Ny = 5
-Delta = 0.5
+Ny = 11
+Delta = 0.01
 k = 1.98    
 w0 = 2.0
 Gamma = 1.0

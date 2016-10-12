@@ -14,7 +14,8 @@ complex incomplete_gamma(int n, complex x)
       exit(EXIT_FAILURE);
    }
 
-   //cpow cannot handle this special point; cpow(x,0)=nan+nan*I when x=0.
+   //cpow cannot handle this special point; cpow(x,0)=nan+nan*I when x=0
+   //so just return 0, since gamma(n>=1, x=0)=0 anyway 
    if(x==0)
       return 0;
 
@@ -27,7 +28,7 @@ complex incomplete_gamma(int n, complex x)
 }
 
 
-// This function returns the solution psi[j][i] in x<-a subject incident plane wave
+// This function returns the solution psi[j][i] in x<-a subject to incident plane wave
 complex plane_wave_BC(int j, int i, grid * simulation)
 {
     double x = (i-simulation->origin_index)*simulation->Delta; //check!!!
@@ -43,9 +44,9 @@ complex plane_wave_BC(int j, int i, grid * simulation)
 
     for(int n=1; n<=(j/simulation->nx); n++)
     {
-        sum += cpow(0.5*Gamma, n-0.5)/(tgamma(n+1)*cpow(p, n+1)) * \
-               ( cpow(p, n+1)*cpow(t-n*td, n)*cexp(n*(I*w0*td+0.5*Gamma*td)-I*w0*t-0.5*Gamma*t)
-                 + cpow(I, n)*(k-w0)*incomplete_gamma(n+1, -I*p*(t-n*td))*cexp(I*n*k*td-I*k*t));
+        sum += cpow(0.5*Gamma, n-0.5)/tgamma(n+1) * \
+               ( cpow(t-n*td, n)*cexp(n*(I*w0*td+0.5*Gamma*td)-I*w0*t-0.5*Gamma*t)
+                 + cpow(I, n)*(k-w0)*incomplete_gamma(n+1, -I*p*(t-n*td))*cexp(I*n*k*td-I*k*t)/cpow(p, n+1));
     }
     e_t -= cexp(-0.5*I*k*td)*sum;
     e_t *= sqrt(2.)*cexp(I*k*(x-t)); // psi(x,t) = sqrt(2)e^{ik(x-t)}*e(t)
@@ -241,14 +242,49 @@ void print_initial_condition(grid * simulation)
 }
 
 
+void print_boundary_condition(grid * simulation)
+{
+    for(int j=simulation->Ny-1; j>=0; j--)
+    {
+        printf("          t = %f\n", j*simulation->Delta);
+        for(int i=0; i<simulation->psix0_x_size; i++)
+        {
+            const char * c;
+            if(cimag(simulation->psi[j][i])<0)
+            {
+                c = "";
+            }
+            else
+            {
+                c = "+";
+            }
+            printf("x=%.3f: %.7f%s%.7fI\n", -(simulation->Nx+simulation->nx+1-i)*simulation->Delta, \
+                   creal(simulation->psi[j][i]), c, cimag(simulation->psi[j][i]));
+        }
+        printf("\n");
+    }
+}
+
+
 void print_psi(grid * simulation)
 {
     for(int j=simulation->Ny-1; j>=0; j--)
     {
-        printf("t = %.3f\n", j*simulation->Delta);
+        printf("          t = %f\n", j*simulation->Delta);
         for(int i=0; i<simulation->Ntotal; i++)
         {
-            printf("%.3f+%.3fI\n", creal(simulation->psi[j][i]), cimag(simulation->psi[j][i]));
+            const char * c;
+            if(cimag(simulation->psi[j][i])<0)
+            {
+                c = "";
+            }
+            else
+            {
+                c = "+";
+            }
+            //char c[] = (cimag(simulation->psi[j][i])<0?" ":"+");
+            printf("x=%.3f: %.7f%s%.7fI\n", -(simulation->Nx+simulation->nx+1-i)*simulation->Delta, \
+                   creal(simulation->psi[j][i]), c, cimag(simulation->psi[j][i]));
         }
         printf("\n");
     }
