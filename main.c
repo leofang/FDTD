@@ -71,13 +71,13 @@ int main(int argc, char **argv)
                    double on_light_cone = (j-i == -simulation->minus_a_index?0.5:1.0);
 
                    //double on_origin = (j==0 ? 0.5 : 1.0);
-                   simulation->psi[j][i] += sqrt(simulation->Gamma) * on_light_cone \ 
+                   simulation->psi[j][i] += sqrt(simulation->Gamma) * on_light_cone \
                                             * two_photon_input((i-simulation->origin_index)-j, -simulation->nx/2-j, simulation);
 
                    if(j>simulation->nx)
                    {
                    //    double on_delay_line = (j==simulation->nx ? 0.5 : 1.0);
-                       simulation->psi[j][i] -= sqrt(simulation->Gamma) * on_light_cone \ 
+                       simulation->psi[j][i] -= sqrt(simulation->Gamma) * on_light_cone \
                                                 * two_photon_input((i-simulation->origin_index)-j, simulation->nx/2-j, simulation);
                    }
                }
