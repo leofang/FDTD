@@ -13,7 +13,7 @@ void readfile(FILE * f, char *** str_array, size_t *count)
   while( getline(&str, &size, f) >= 0 ) 
   {
       *str_array = realloc(*str_array, (*count+1)*sizeof(**str_array));
-      if(*str != '\n') //skip empty line
+      if(*str != '\n') //skip empty line; TODO: write a better treatment!
       { 
          (*str_array)[*count] = str;
          (*count)++;
@@ -62,7 +62,6 @@ kvpair_t * create_kvpair(char * str)
 
 
 kvarray_t * readKVs(const char * fname) {
-  //WRITE ME
   kvarray_t * kvarray = malloc(sizeof(*kvarray));
   kvarray->kvpair = NULL;
   kvarray->kvpair_len = 0;
@@ -111,7 +110,6 @@ kvarray_t * readKVs(const char * fname) {
 }
 
 void freeKVs(kvarray_t * pairs) {
-  //WRITE ME
   for(int i=0; i<pairs->kvpair_len; i++)
   {
      free(pairs->kvpair[i]->key);
@@ -123,13 +121,11 @@ void freeKVs(kvarray_t * pairs) {
 }
 
 void printKVs(kvarray_t * pairs) {
-  //WRITE ME
   for(int i=0; i<pairs->kvpair_len; i++)
      printf("key = '%s' value = '%s'\n", pairs->kvpair[i]->key, pairs->kvpair[i]->value);
 }
 
 char * lookupValue(kvarray_t * pairs, const char * key) {
-  //WRITE ME
   const char * str1=NULL;
   const char * str2=NULL;
   int key_index = 0;
