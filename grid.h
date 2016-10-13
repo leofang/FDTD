@@ -6,33 +6,36 @@
 #include <complex.h> 
 #include "kv.h"
 
-// Create a grid which stores the wavefunction and other relavant information.
-// The layout of the grid should look like this:
-//
-//                                                   i=(Nx+nx+1)
-//      array index i=0 1 2 3 ... ... nx (nx+1) ... ...   \ ... ...  (2Nx+nx+1)
-//                    | | | |          \   /               \                 \
-// t=(Ny-1)*Delta  ^  * * * * ... * * * * @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
-// t=(Ny-2)*Delta  |  * * * * ... * * * * @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
-// t=(Ny-3)*Delta  |  * * * * ... * * * * @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
-//                             .          @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
-//                 j           .          @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
-//                             .          @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
-// t= 2 * Delta    |  * * * * ... * * * * @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
-// t= 1 * Delta    |  * * * * ... * * * * @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
-// t= 0            |  * * * * ... * * * * * * * * * * * * * * ... * * * * * * *
-//                   /                 /   \                 \               /
-//   x=-(Nx+nx+1)*Delta   x=-(Nx+1)*Delta   x=-Nx*Delta      x=0     x=Nx*Delta
-//
-// where the t=0 line (symbol *) is given by the initial condition, and the left 
-// area (symbol *) is given by the boundary condition, both of which should 
-// eventually be the input. The rectangular area (symbol @) of size (2Nx+1)*(Ny-1)
-// is the region where the wavefunction is to be solved.
-//
-// Note that in the layout above, the qubit at x=-a has index i=Nx+nx/2+1, and 
-// its mirror image at x=+a has index i=Nx+3nx/2+1. This is why we need nx to 
-// be an integer multiple of 2, and also require nx <= 2Nx to reach x>=a and to
-// make the "boundary condition" well defined in x<=-a."
+/* 
+   Create a grid which stores the wavefunction and other relavant information.
+   The layout of the grid should look like this:
+  
+                                                     i=(Nx+nx+1)
+        array index i=0 1 2 3 ... ... nx (nx+1) ... ...   \ ... ...  (2Nx+nx+1)
+                      | | | |          \   /               \                 \
+   t=(Ny-1)*Delta  ^  % % % % ... % % % % @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
+   t=(Ny-2)*Delta  |  % % % % ... % % % % @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
+   t=(Ny-3)*Delta  |  % % % % ... % % % % @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
+                               .          @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
+                   j           .          @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
+                               .          @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
+   t= 2 * Delta    |  % % % % ... % % % % @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
+   t= 1 * Delta    |  % % % % ... % % % % @ @ @ @ @ @ @ @ @ @ ... @ @ @ @ @ @ @ 
+   t= 0            |  % % % % ... % % % % * * * * * * * * * * ... * * * * * * *
+                     /                 /   \                 \               /
+     x=-(Nx+nx+1)*Delta   x=-(Nx+1)*Delta   x=-Nx*Delta      x=0     x=Nx*Delta
+  
+   where the t=0 line (symbol *) is given by the initial condition, and the left 
+   area (symbol %) is given by the boundary condition, both of which should be
+   given before the calculation starts. The rectangular area (symbol @) of size
+   (2Nx+1)*(Ny-1) is the region where the wavefunction is to be solved.
+  
+   Note that in the layout above, the qubit at x=-a has index i=Nx+nx/2+1, and 
+   its mirror image at x=+a has index i=Nx+3nx/2+1. This is why we need nx to 
+   be an integer multiple of 2, and also require nx <= 2Nx to reach x>=a and to
+   make the "boundary condition" well defined in x<=-a."               
+*/
+
 
 struct _grid 
 {
