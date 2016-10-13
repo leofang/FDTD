@@ -56,12 +56,13 @@ complex bar_average(int j, int i, grid * simulation)
 }
 
 
+//this function computes chi(x1, x2, 0)
 complex two_photon_input(int i1, int i2, grid * simulation)
 {
    //TODO: make a flexible choice for different inputs
 
    double x1 = i1 * simulation->Delta;
-   double x2 = i2 * simulation->Delta;
+   double x2 = (i2+0.5) * simulation->Delta; //shift +0.5 due to Taylor expansion at the center of square //TODO: find a better way to write it
 
    //Two-photon plane waves
    return cexp( I * simulation->k * (x1+x2) );

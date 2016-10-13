@@ -94,11 +94,11 @@ int main(int argc, char **argv)
        }
    }
 
-   print_boundary_condition(simulation);
-   printf("******************************************\n");
+//   print_initial_condition(simulation);
+//   print_boundary_condition(simulation);
+//   printf("******************************************\n");
    print_psi(simulation);
 //   print_grid(simulation);
-//   print_initial_condition(simulation);
 
 
    free_grid(simulation);
