@@ -4,8 +4,17 @@
 #include "grid.h"
 
 
-// Compute incomplete Gamma function gamma(n,x) (Arfken, 5th ed, P.661).
-// Note that gamma(n,x) is different from Gamma(n,x)! ( gamma(n,x)+Gamma(n,x)=Gamma(n) )
+// Compute the incomplete Gamma function gamma(n,x). Note that gamma(n,x) 
+// is different from Gamma(n,x) (gamma(n,x)+Gamma(n,x)=1), and can be 
+// called in Mathematica by GammaRegularized[n, 0, x].
+//
+// The following implementation is based on Numerical Recipes Ch.6.2, where 
+// the infinite series representation Eq.6.2.5 is used for better precision 
+// and stability (the finite sum given in Arfken, 5th ed, P.661, which was 
+// implemented in the earlier version, is not useful as it subtracts two 
+// nearly same numbers).
+//
+// Note the normalization factor (n-1)!.
 complex incomplete_gamma(int n, complex x)
 {
    if(n<=0)
@@ -14,17 +23,24 @@ complex incomplete_gamma(int n, complex x)
       exit(EXIT_FAILURE);
    }
 
-   //cpow cannot handle this special point; cpow(x,0)=nan+nan*I when x=0
-   //so just return 0, since gamma(n>=1, x=0)=0 anyway 
+   //gamma(n>=1, x=0)=0, no need to do real computation
    if(x==0)
       return 0;
 
-   complex sum = 0;
+   //compute exp(-x)*x^n/(n-1)!
+   complex prefactor = cexp(n*clog(x)-x-lgamma(n));
 
-   for(int i=0; i<n; i++)
-      sum += cpow(x, i)/tgamma(i+1);
+   //compute the infinite sum
+   complex sum = 1.0/n;
+   complex temp = 1.0/n;
+   for(int i=1; ; i++)
+   {
+      temp *= x/(double)(n+i);
+      sum += temp;
 
-   return tgamma(n)*(1.-cexp(-x)*sum);
+      if(cabs(temp) < 1.0E-14*cabs(sum)) //stop the sum when temp is extremely small
+         return prefactor*sum;
+   }
 }
 
 
@@ -44,9 +60,15 @@ complex plane_wave_BC(int j, int i, grid * simulation)
 
     for(int n=1; n<=(j/simulation->nx); n++)
     {
-        sum += cpow(0.5*Gamma, n-0.5)/tgamma(n+1) * \
-               ( cpow(t-n*td, n)*cexp(n*(I*w0*td+0.5*Gamma*td)-I*w0*t-0.5*Gamma*t)
-                 + cpow(I, n)*(k-w0)*incomplete_gamma(n+1, -I*p*(t-n*td))*cexp(I*n*k*td-I*k*t)/cpow(p, n+1));
+        complex temp = cpow(0.5*Gamma, n-0.5) * \
+                       ( cpow(t-n*td, n) * cexp(n*(I*w0*td+0.5*Gamma*td)-I*w0*t-0.5*Gamma*t-lgamma(n+1) ) \
+                       + cpow(I, n)*(k-w0)*incomplete_gamma(n+1, -I*p*(t-n*td))*cexp(I*n*k*td-I*k*t)/cpow(p, n+1));
+	sum += temp;
+	// based on my observation, for some chosen parameters the wavefunction converges 
+	// very fast, so one can just cut the summation off if the precision is reached.
+	// this also helps prevent some overflow issue a bit.
+        if(cabs(temp) < 1.0E-12*cabs(sum))
+           break;
     }
     e_t -= cexp(-0.5*I*k*td)*sum;
     e_t *= sqrt(2.)*cexp(I*k*(x-t)); // psi(x,t) = sqrt(2)e^{ik(x-t)}*e(t)
