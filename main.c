@@ -85,10 +85,16 @@ int main(int argc, char **argv)
    }
 
 //   print_initial_condition(simulation);
-   print_boundary_condition(simulation);
+//   print_boundary_condition(simulation);
 //   printf("******************************************\n");
    print_psi(simulation);
 //   print_grid(simulation);
+   FILE * f = fopen("test_output_re.txt", "w");
+   save_psi(simulation, f, creal);
+   fclose(f);
+   f = fopen("test_output_im.txt", "w");
+   save_psi(simulation, f, cimag);
+   fclose(f);
 
 
    free_grid(simulation);

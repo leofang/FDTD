@@ -1,5 +1,5 @@
-#ifndef _FDTD_H
-#define _FDTD_H
+#ifndef __GRID_H__
+#define __GRID_H__
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -85,7 +85,7 @@ void print_initial_condition(grid * simulation);
 void print_boundary_condition(grid * simulation);
 void print_grid(grid * simulation);
 void print_psi(grid * simulation);
-
+void save_psi(grid * simulation, FILE * f, double (*part)(complex));
 
 
 

@@ -313,6 +313,21 @@ void print_psi(grid * simulation)
 }
 
 
+//this function stores the computed wavefunction into a file;
+//the third argument "part" can be creal or cimag
+void save_psi(grid * simulation, FILE * f, double (*part)(complex))
+{
+    for(int j=0; j<simulation->Ny; j++)
+    {
+        for(int i=0; i<simulation->Ntotal; i++)
+        {
+            fprintf( f, "%.7f ", part(simulation->psi[j][i]) );
+        }
+        fprintf( f, "\n");
+    }
+}
+
+
 void print_grid(grid * simulation)
 {
     printf("nx = %d\n", simulation->nx); 
