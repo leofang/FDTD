@@ -2,6 +2,8 @@
 #include <math.h>
 #include "kv.h"
 #include "grid.h"
+#include <string.h>
+#include <float.h> //for DBL_EPSILON ~ 2.2E-16
 
 
 // Compute the incomplete Gamma function gamma(n,x). Note that gamma(n,x) 
@@ -10,9 +12,9 @@
 //
 // The following implementation is based on Numerical Recipes Ch.6.2, where 
 // the infinite series representation Eq.6.2.5 is used for better precision 
-// and stability (the finite sum given in Arfken, 5th ed, P.661, which was 
-// implemented in the earlier version, is not useful as it subtracts two 
-// nearly same numbers).
+// and stability (the finite sum, Eq.10.70, in Arfken, 5th ed, P.661, which 
+// was implemented in the earlier version, is not useful as it subtracts two 
+// nearly same numbers). See also ASA032, ASA147 and ASA239.
 //
 // Note the normalization factor (n-1)!.
 complex incomplete_gamma(int n, complex x)
@@ -38,7 +40,7 @@ complex incomplete_gamma(int n, complex x)
       temp *= x/(double)(n+i);
       sum += temp;
 
-      if(cabs(temp) < 1.0E-14*cabs(sum)) //stop the sum when temp is extremely small
+      if(cabs(temp) < DBL_EPSILON*cabs(sum)) //stop the sum when temp is extremely small
          return prefactor*sum;
    }
 }
@@ -67,7 +69,7 @@ complex plane_wave_BC(int j, int i, grid * simulation)
 	// based on my observation, for some chosen parameters the wavefunction converges 
 	// very fast, so one can just cut the summation off if the precision is reached.
 	// this also helps prevent some overflow issue a bit.
-        if(cabs(temp) < 1.0E-12*cabs(sum))
+        if(cabs(temp) < DBL_EPSILON*cabs(sum))
            break;
     }
     e_t -= cexp(-0.5*I*k*td)*sum;
@@ -314,9 +316,27 @@ void print_psi(grid * simulation)
 
 
 //this function stores the computed wavefunction into a file;
-//the third argument "part" can be creal or cimag
-void save_psi(grid * simulation, FILE * f, double (*part)(complex))
+//the third argument "part" can be any function converting a 
+//complex to a double, e.g., creal, cimag, cabs, etc. 
+void save_psi(grid * simulation, const char * filename, double (*part)(complex))
 {
+    char * str = strdup(filename);
+    str = realloc(str, (strlen(filename)+10)*sizeof(char) );
+
+    if(part == &creal)
+       strcat(str, ".re.out");
+    else if(part == &cimag)
+       strcat(str, ".im.out");
+    else if(part == &cabs)
+       strcat(str, ".abs.out");
+    else
+    {
+       fprintf(stderr, "Warning: default filename is used.\n");
+       strcat(str, ".out");
+    }
+
+    FILE * f = fopen(str, "w");
+
     for(int j=0; j<simulation->Ny; j++)
     {
         for(int i=0; i<simulation->Ntotal; i++)
@@ -325,6 +345,9 @@ void save_psi(grid * simulation, FILE * f, double (*part)(complex))
         }
         fprintf( f, "\n");
     }
+
+    fclose(f);
+    free(str);
 }
 
 

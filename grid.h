@@ -85,7 +85,7 @@ void print_initial_condition(grid * simulation);
 void print_boundary_condition(grid * simulation);
 void print_grid(grid * simulation);
 void print_psi(grid * simulation);
-void save_psi(grid * simulation, FILE * f, double (*part)(complex));
+void save_psi(grid * simulation, const char * filename, double (*part)(complex));
 
 
 
