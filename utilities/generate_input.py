@@ -10,18 +10,18 @@ from math import ceil
 ######### Simulation Parameters ########
 # grid size
 Delta = 0.01
-# nx = 2a/Delta (in Delta)
+# number of grids in-between the qubit and its mirror image (nx = 2a/Delta)
 nx = 20
-# horizontal (half) box size (in qubit wavelength)
+# half of number of (qubit) wavelength in x direction
 Nx = 10
-# vertical box size (in qubit wavelength)
+# number of (qubit) wavelength in t direction
 Ny = 200
 
 ########## Physics Paramters ###########
 # qubit frequency (in Gamma)
-k0 = 20
+k0 = 20.0
 # incident frequency (in Gamma)
-k = 20
+k = 20.0
 # k0 a = n pi
 n = 0.5
 
@@ -37,14 +37,25 @@ if len(sys.argv) != 2:
    else:
       sys.exit("Too many arguments. Abort!")
 
-# in units of Delta
+# convert to number of grid points
 Nx = ceil(Nx * nx/n)
 Ny = ceil(Ny * nx/n)
 
-# in units of Delta^-1
-k = (2.*n*pi/nx) * (k/k0)
-w0 = 2.*n*pi/nx
-Gamma = (2.*n*pi/nx)/k0
+# use Delta^-1 as the unit of frequency
+if (2.*n*pi/nx) * (k/k0) < pi:
+   k = (2.*n*pi/nx) * (k/k0) / Delta
+else:
+   sys.exit("k is beyond the Nyquist limit. Choose a larger nx for the given n. Abort!")
+
+if 2.*n*pi/nx < pi:
+   w0 = 2.*n*pi/nx / Delta
+else:
+   sys.exit("w0 is beyond the Nyquist limit. Choose a larger nx for the given n. Abort!")
+
+if (2.*n*pi/nx)/k0 < pi:
+   Gamma = (2.*n*pi/nx)/k0 / Delta
+else:
+   sys.exit("Gamma is beyond the Nyquist limit. Choose a larger nx or k0 for the given n. Abort!")
 
 # create the input file
 f = open(sys.argv[1], "w")
