@@ -22,6 +22,13 @@ int main(int argc, char **argv)
    {
        for(int i=simulation->nx+1; i<simulation->Ntotal; i++) //start from x=-Nx*Delta
        {
+           //points (i) right next to the 1st light cone and in tile B1, 
+           //and (ii) right next to the 2nd light cone 
+           //should be strictly zero under any circumstances
+           if( ((j < simulation->nx) && (i==j+simulation->minus_a_index+1))
+               || (i==j+simulation->plus_a_index+1) )
+               continue; //do nothing, as psi is already zero initailized
+
            //free propagation (decay included)
            simulation->psi[j][i] = (1./simulation->Delta-0.25*W)*simulation->psi[j-1][i-1]   \
                                    -0.25*W*(simulation->psi[j-1][i]+simulation->psi[j][i-1]);

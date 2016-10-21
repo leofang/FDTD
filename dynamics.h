@@ -5,9 +5,6 @@
 // j and i are the array indices psi[j][i] of the upper right corner
 complex square_average(int j, int i, grid * simulation)
 {
-   if(j<1) //everything is zero below t=0
-      return 0;
-
    if(i<1) //beyond the boundary x=-(Nx+nx+1)*Delta
    {
       fprintf(stderr, "Error in square_average: beyond left boundary. Abort!\n");
@@ -19,6 +16,9 @@ complex square_average(int j, int i, grid * simulation)
       fprintf(stderr, "Error in square_average: beyond right boundary. Abort!\n");
       exit(EXIT_FAILURE);
    }
+
+   if(j<1) //everything is zero below t=0
+      return 0;
 
    complex square = 0;
 
@@ -37,9 +37,6 @@ complex square_average(int j, int i, grid * simulation)
 // j and i are the array indices psi[j][i] of the right end
 complex bar_average(int j, int i, grid * simulation)
 {
-   if(j<0) //everything is zero below t=0
-      return 0;
-
    if(i<1) //beyond the boundary x=-(Nx+nx+1)*Delta
    {
       fprintf(stderr, "Error in bar_average: beyond left boundary. Abort!\n");
@@ -51,6 +48,9 @@ complex bar_average(int j, int i, grid * simulation)
       fprintf(stderr, "Error in bar_average: beyond right boundary. Abort!\n");
       exit(EXIT_FAILURE);
    }
+
+   if(j<0) //everything is zero below t=0
+      return 0;
 
    return (simulation->psi[j][i]+simulation->psi[j][i-1])/2.;
 }
