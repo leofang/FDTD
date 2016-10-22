@@ -11,15 +11,10 @@ A makefile is provided. Type `make` in the same folder to compile, and an execut
 `./FDTD input_filename`
 
 ## Mandatory input parameters
-nx
-Nx
-Ny
-Delta
-k
-w0
-Gamma
+Only 7 are required: `nx`, `Nx`, `Ny`, `Delta`, `k`, `w0`, and `Gamma`. The first 4 are simulation-related and the rest are physics-related. See the comments in `grid.h` for the layout of the grid and details of various parameters. A Python script is provided in the `utilities` folder for users' convenience.
 
-See the comments in `grid.h` for the layout of the grid and detail of various parameters. A Python script is provided in the `utilities` folder for users' convenience.
+## Output
+Currently two files will be generated: `input_filename.re.out` and `input_filename.im.out` (real and imaginary parts of the wavefunction, respectively).
 
 ## Author
 Leo Fang
