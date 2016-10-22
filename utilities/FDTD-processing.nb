@@ -1,0 +1,322 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 9.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       157,          7]
+NotebookDataLength[     11616,        313]
+NotebookOptionsPosition[     10716,        282]
+NotebookOutlinePosition[     11071,        298]
+CellTagsIndexPosition[     11028,        295]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[
+ RowBox[{"(*", " ", 
+  RowBox[{"read", " ", "input", " ", "parameters"}], " ", "*)"}]], "Input",
+ CellChangeTimes->{{3.686141230986375*^9, 3.6861412378269033`*^9}}],
+
+Cell[BoxData[
+ RowBox[{"Import", "[", 
+  RowBox[{
+   RowBox[{"NotebookDirectory", "[", "]"}], "<>", "\"\<../k0a_0.5pi_on\>\""}],
+   "]"}]], "Input",
+ CellChangeTimes->{{3.686073175448902*^9, 3.6860731799846363`*^9}, 
+   3.686073211048245*^9, {3.686078115785614*^9, 3.686078116040594*^9}, {
+   3.6861388618286867`*^9, 3.6861388655589933`*^9}, {3.686139507308385*^9, 
+   3.6861395326663733`*^9}, {3.686141814988141*^9, 3.686141815736702*^9}, {
+   3.686141883713605*^9, 3.686141885570209*^9}}],
+
+Cell[BoxData[
+ RowBox[{"%", "//", "ToExpression", " ", 
+  RowBox[{"(*", " ", 
+   RowBox[{"ignore", " ", "the", " ", "Gamma", " ", 
+    RowBox[{"thing", " ", "--"}], " ", "it", " ", "has", " ", "name", " ", 
+    "conflict", " ", "with", " ", "the", " ", "Mathematica", " ", "Gamma", 
+    " ", "function"}], " ", "*)"}]}]], "Input",
+ CellChangeTimes->{{3.68613954692691*^9, 3.6861395495793467`*^9}, {
+  3.686141272760371*^9, 3.686141307467169*^9}}],
+
+Cell[BoxData[
+ RowBox[{"(*", " ", 
+  RowBox[{"read", " ", "computed", " ", "wavefunctions"}], " ", 
+  "*)"}]], "Input",
+ CellChangeTimes->{{3.686141230986375*^9, 3.686141254043701*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"bR", "=", 
+    RowBox[{"Import", "[", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"NotebookDirectory", "[", "]"}], "<>", 
+       "\"\<../k0a_0.5pi_on.re.out\>\""}], ",", "\"\<Table\>\""}], "]"}]}], 
+   ";"}], " ", 
+  RowBox[{"(*", " ", 
+   RowBox[{"real", " ", "part"}], "*)"}]}]], "Input",
+ CellChangeTimes->{{3.68590352509446*^9, 3.6859035460681257`*^9}, {
+   3.68590361901433*^9, 3.685903619738954*^9}, {3.685903839761773*^9, 
+   3.6859038411442842`*^9}, {3.686063652773052*^9, 3.686063665892928*^9}, {
+   3.6860718382624063`*^9, 3.686071843732375*^9}, {3.686072532934662*^9, 
+   3.686072533189172*^9}, {3.686078120633203*^9, 3.6860781209370604`*^9}, {
+   3.686138896349057*^9, 3.6861389003993607`*^9}, {3.686139565370081*^9, 
+   3.686139576468504*^9}, {3.686139697280517*^9, 3.6861396995838547`*^9}, 
+   3.686140777085886*^9, {3.6861414028791428`*^9, 3.6861414090320187`*^9}, {
+   3.6861420510353107`*^9, 3.686142058221898*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"bI", "=", 
+    RowBox[{"Import", "[", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"NotebookDirectory", "[", "]"}], "<>", 
+       "\"\<../k0a_0.5pi_on.im.out\>\""}], ",", "\"\<Table\>\""}], "]"}]}], 
+   ";"}], " ", 
+  RowBox[{"(*", " ", 
+   RowBox[{"imaginary", " ", "part"}], "*)"}]}]], "Input",
+ CellChangeTimes->{{3.68590352509446*^9, 3.6859035460681257`*^9}, {
+   3.68590361901433*^9, 3.685903619738954*^9}, {3.685903851278116*^9, 
+   3.685903852013455*^9}, 3.6860636872497473`*^9, {3.686067725944076*^9, 
+   3.686067726649747*^9}, 3.68607184830886*^9, {3.686072538502871*^9, 
+   3.686072539125579*^9}, {3.6860781230972023`*^9, 3.68607812333685*^9}, 
+   3.68613890694272*^9, {3.686139607266058*^9, 3.686139616744776*^9}, {
+   3.686139803241754*^9, 3.686139803537619*^9}, {3.686139936742548*^9, 
+   3.6861399381636133`*^9}, {3.68614066425288*^9, 3.686140665048378*^9}, {
+   3.686141416099324*^9, 3.686141422445628*^9}, {3.6861420626680927`*^9, 
+   3.68614206376423*^9}}],
+
+Cell[BoxData[
+ RowBox[{"(*", " ", 
+  RowBox[{"setup", " ", "based", " ", "on", " ", "input", " ", "parameters"}],
+   " ", "*)"}]], "Input",
+ CellChangeTimes->{{3.686141230986375*^9, 3.68614126349759*^9}}],
+
+Cell[BoxData[
+ RowBox[{"Xmin", "=", 
+  RowBox[{
+   RowBox[{"-", 
+    RowBox[{"(", 
+     RowBox[{"Nx", "+", "nx", "+", "1"}], ")"}]}], "Delta"}]}]], "Input",
+ CellChangeTimes->{{3.6860638168369207`*^9, 3.686063849842124*^9}, {
+  3.686072083536743*^9, 3.6860720837919903`*^9}, {3.6860725456389503`*^9, 
+  3.686072545911799*^9}, {3.6860726842455063`*^9, 3.68607268486786*^9}, {
+  3.686072841665362*^9, 3.686072845791586*^9}, {3.686073248132491*^9, 
+  3.686073253618965*^9}}],
+
+Cell[BoxData[
+ RowBox[{"Xmax", "=", 
+  RowBox[{
+   RowBox[{"(", "Nx", ")"}], "Delta"}]}]], "Input",
+ CellChangeTimes->{{3.686063856753141*^9, 3.686063862544717*^9}, {
+  3.686072090223982*^9, 3.6860720906552258`*^9}, {3.686072554725955*^9, 
+  3.686072555221718*^9}, {3.6860726892035913`*^9, 3.6860726893312683`*^9}, {
+  3.686072849759182*^9, 3.686072851982954*^9}, {3.686073258947021*^9, 
+  3.686073259796647*^9}}],
+
+Cell[BoxData[
+ RowBox[{"qubit1", "=", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"-", "nx"}], "/", "2"}], "*", "Delta"}]}]], "Input",
+ CellChangeTimes->{{3.686078704750577*^9, 3.6860787181904373`*^9}, {
+  3.686140872068376*^9, 3.686140880311419*^9}}],
+
+Cell[BoxData[
+ RowBox[{"qubit2", "=", 
+  RowBox[{
+   RowBox[{"nx", "/", "2"}], "*", "Delta"}]}]], "Input",
+ CellChangeTimes->{{3.6860787246973057`*^9, 3.6860787297052298`*^9}, 
+   3.686140886178761*^9}],
+
+Cell[BoxData[
+ RowBox[{"(*", " ", 
+  RowBox[{
+  "plot", " ", "the", " ", "real", " ", "part", " ", "of", " ", "the", " ", 
+   "first", " ", "10", "%", " ", 
+   RowBox[{"(", 
+    RowBox[{"in", " ", "time"}], ")"}], " ", "solution"}], " ", 
+  "*)"}]], "Input",
+ CellChangeTimes->{{3.686141184448778*^9, 3.6861411960678873`*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"ny", "=", "0.1"}], ";"}]], "Input",
+ CellChangeTimes->{{3.686068389047533*^9, 3.686068393448057*^9}, {
+  3.686069006488678*^9, 3.686069006648552*^9}, {3.686072567955511*^9, 
+  3.686072568193915*^9}, {3.68607286537397*^9, 3.686072866508905*^9}, {
+  3.686073277604354*^9, 3.6860732851089907`*^9}}],
+
+Cell[BoxData[
+ RowBox[{"ListDensityPlot", "[", 
+  RowBox[{
+   RowBox[{"bR", "[", 
+    RowBox[{"[", 
+     RowBox[{"1", ";;", 
+      RowBox[{"Ceiling", "[", 
+       RowBox[{"ny", "*", "Ny"}], "]"}]}], "]"}], "]"}], ",", 
+   RowBox[{"DataRange", "\[Rule]", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"Xmin", ",", "Xmax"}], "}"}], ",", 
+      RowBox[{"{", 
+       RowBox[{"0", ",", 
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"ny", "*", "Ny"}], "-", "1"}], ")"}], "*", "Delta"}]}], 
+       "}"}]}], "}"}]}], ",", 
+   RowBox[{"PlotRange", "\[Rule]", 
+    RowBox[{"{", 
+     RowBox[{"All", ",", "All"}], "}"}]}], ",", 
+   RowBox[{"ColorFunction", "\[Rule]", "\"\<Warm\>\""}], ",", 
+   RowBox[{"PlotLegends", "\[Rule]", "Automatic"}], ",", 
+   RowBox[{"AspectRatio", "\[Rule]", "Automatic"}], ",", 
+   RowBox[{"MaxPlotPoints", "\[Rule]", "200"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.686063870387212*^9, 3.686064005410028*^9}, {
+  3.6860645382855387`*^9, 3.686064540844549*^9}, {3.6860645914350224`*^9, 
+  3.686064612203661*^9}, {3.686064685050681*^9, 3.6860646862182198`*^9}, {
+  3.686064877371138*^9, 3.686064877797864*^9}, {3.686067845498468*^9, 
+  3.6860678470172443`*^9}, {3.6860680537047243`*^9, 3.686068061040224*^9}, {
+  3.686068149779644*^9, 3.686068151670142*^9}, {3.6860689320193*^9, 
+  3.6860689323560047`*^9}, {3.6860732893230133`*^9, 3.686073377704067*^9}, {
+  3.686073434194047*^9, 3.686073460436975*^9}, {3.686078138875966*^9, 
+  3.686078138938755*^9}, {3.686141316792644*^9, 3.686141317330831*^9}}],
+
+Cell[BoxData[
+ RowBox[{"(*", " ", 
+  RowBox[{
+  "plot", " ", "the", " ", "real", " ", "part", " ", "of", " ", "the", " ", 
+   "entire", " ", "solution"}], " ", "*)"}]], "Input",
+ CellChangeTimes->{{3.686141158911491*^9, 3.6861411741278467`*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"ListDensityPlot", "[", 
+   RowBox[{
+    RowBox[{"bR", "[", 
+     RowBox[{"[", 
+      RowBox[{"1", ";;", "Ny"}], "]"}], "]"}], ",", 
+    RowBox[{"DataRange", "\[Rule]", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{"Xmin", ",", "Xmax"}], "}"}], ",", 
+       RowBox[{"{", 
+        RowBox[{"0", ",", 
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{"Ny", "-", "1"}], ")"}], "*", "Delta"}]}], "}"}]}], 
+      "}"}]}], ",", 
+    RowBox[{"PlotRange", "\[Rule]", 
+     RowBox[{"{", 
+      RowBox[{"All", ",", "All"}], "}"}]}], ",", 
+    RowBox[{"ColorFunction", "\[Rule]", "\"\<Warm\>\""}], ",", 
+    RowBox[{"PlotLegends", "\[Rule]", "Automatic"}], ",", 
+    RowBox[{"AspectRatio", "\[Rule]", "Automatic"}], ",", 
+    RowBox[{"MaxPlotPoints", "\[Rule]", 
+     RowBox[{"{", 
+      RowBox[{"200", ",", "500"}], "}"}]}]}], "]"}], " "}]], "Input",
+ CellChangeTimes->{{3.6860682078597803`*^9, 3.686068208289332*^9}, {
+   3.6860682553613167`*^9, 3.6860682619361553`*^9}, {3.686068989440534*^9, 
+   3.686068992287307*^9}, 3.6860781489265203`*^9, {3.6861411447649593`*^9, 
+   3.686141146278555*^9}}],
+
+Cell[BoxData[
+ RowBox[{"(*", " ", 
+  RowBox[{
+  "show", " ", "the", " ", "wave", " ", "propagation", " ", "as", " ", "an", 
+   " ", "animation"}], " ", "*)"}]], "Input",
+ CellChangeTimes->{{3.6861412060839*^9, 3.686141226740333*^9}}],
+
+Cell[BoxData[
+ RowBox[{"Manipulate", "[", 
+  RowBox[{
+   RowBox[{"ListPlot", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"bR", "[", 
+        RowBox[{"[", "i", "]"}], "]"}], ",", 
+       RowBox[{"bI", "[", 
+        RowBox[{"[", "i", "]"}], "]"}]}], "}"}], ",", 
+     RowBox[{"Joined", "\[Rule]", "True"}], ",", 
+     RowBox[{"PlotMarkers", "\[Rule]", "None"}], ",", 
+     RowBox[{"DataRange", "\[Rule]", 
+      RowBox[{"{", 
+       RowBox[{"Xmin", ",", "Xmax"}], "}"}]}], ",", 
+     RowBox[{"PlotRange", "\[Rule]", 
+      RowBox[{"{", 
+       RowBox[{"All", ",", 
+        RowBox[{"{", 
+         RowBox[{
+          RowBox[{"-", "5.5"}], ",", "5.5"}], "}"}]}], "}"}]}], ",", 
+     RowBox[{"GridLines", "\[Rule]", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"{", 
+         RowBox[{"qubit1", ",", "qubit2"}], "}"}], ",", "None"}], "}"}]}]}], 
+    "]"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"i", ",", "1", ",", 
+     RowBox[{"Length", "[", "bR", "]"}], ",", "1"}], "}"}]}], "]"}]], "Input",\
+
+ CellChangeTimes->CompressedData["
+1:eJxTTMoPSmViYGAQBmIQfe3yBMl5Za8dC9KXqYDohGnl+iD6za9OMH3l8wkT
+EH25vcwcRD+JetA6H0jntdZ1gGiRZRuXgmizuyuXgegCg31nQfQ58cBzILq6
+xe41iE7mPvcWRB/bctB4AZCecUPGBERzdv+ZCKLb7ypMBdGa59gZFgLp99eO
+sIPoRT90by4C0lyTfz0E0Tppdz6C6F1RUz6D6B+vTH6C6CN7f/8B0Z98ivgX
+A+lvU68Igeh991SUQfQMPxV1ED1R5mvRQSAt0765FEQ/3t5UC6JvLI9tBNFJ
+n6a0gujTqSJtIFon8vZEEM2wR3ASiAYAKTmrTw==
+  "]]
+},
+WindowSize->{1440, 851},
+WindowMargins->{{0, Automatic}, {Automatic, 0}},
+FrontEndVersion->"9.0 for Mac OS X x86 (32-bit, 64-bit Kernel) (January 25, \
+2013)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[557, 20, 178, 3, 28, "Input"],
+Cell[738, 25, 490, 9, 28, "Input"],
+Cell[1231, 36, 446, 8, 28, "Input"],
+Cell[1680, 46, 185, 4, 28, "Input"],
+Cell[1868, 52, 980, 20, 28, "Input"],
+Cell[2851, 74, 1020, 21, 28, "Input"],
+Cell[3874, 97, 204, 4, 28, "Input"],
+Cell[4081, 103, 471, 10, 28, "Input"],
+Cell[4555, 115, 413, 8, 28, "Input"],
+Cell[4971, 125, 243, 6, 28, "Input"],
+Cell[5217, 133, 202, 5, 28, "Input"],
+Cell[5422, 140, 326, 8, 28, "Input"],
+Cell[5751, 150, 330, 6, 28, "Input"],
+Cell[6084, 158, 1572, 35, 46, "Input"],
+Cell[7659, 195, 245, 5, 28, "Input"],
+Cell[7907, 202, 1159, 30, 46, "Input"],
+Cell[9069, 234, 233, 5, 28, "Input"],
+Cell[9305, 241, 1407, 39, 46, "Input"]
+}
+]
+*)
+
+(* End of internal cache information *)

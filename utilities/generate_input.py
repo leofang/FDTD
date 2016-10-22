@@ -11,7 +11,7 @@ from math import ceil
 # grid size
 Delta = 0.01
 # number of grids in-between the qubit and its mirror image (nx = 2a/Delta)
-nx = 20
+nx = 100
 # half of number of (qubit) wavelength in x direction
 Nx = 10
 # number of (qubit) wavelength in t direction
