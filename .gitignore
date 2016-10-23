@@ -1,4 +1,5 @@
 *.o
 .gitconfig
 FDTD
-
+.ycm_extra_conf.py*
+*.out
