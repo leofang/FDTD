@@ -24,8 +24,4 @@ Currently only one kind of initial condition (two-photon plane wave) is built in
 Currently two files will be generated: `input_filename.re.out` and `input_filename.im.out` (real and imaginary parts of the wavefunction, respectively). A Mathematica notebook is provided in the `utilities` folder for simple plotting purposes.
 
 ## License
-This code will be released under [the WTFPL license]. Copyright (c) 2016 by Leo Fang <leofang@phy.duke.edu>
-
-
-
-[the WTFPL license](http://www.wtfpl.net)
+This code will be released under [WTFPL](http://www.wtfpl.net). Copyright (c) 2016 Leo Fang.
