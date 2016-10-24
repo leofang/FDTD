@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       157,          7]
-NotebookDataLength[     11616,        313]
-NotebookOptionsPosition[     10716,        282]
-NotebookOutlinePosition[     11071,        298]
-CellTagsIndexPosition[     11028,        295]
+NotebookDataLength[     12017,        315]
+NotebookOptionsPosition[     11116,        284]
+NotebookOutlinePosition[     11471,        300]
+CellTagsIndexPosition[     11428,        297]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -52,14 +52,13 @@ Cell[BoxData[
 
 Cell[BoxData[
  RowBox[{
-  RowBox[{
-   RowBox[{"bR", "=", 
-    RowBox[{"Import", "[", 
+  RowBox[{"bR", "=", 
+   RowBox[{"ReadList", "[", 
+    RowBox[{
      RowBox[{
-      RowBox[{
-       RowBox[{"NotebookDirectory", "[", "]"}], "<>", 
-       "\"\<../k0a_0.5pi_on.re.out\>\""}], ",", "\"\<Table\>\""}], "]"}]}], 
-   ";"}], " ", 
+      RowBox[{"NotebookDirectory", "[", "]"}], "<>", 
+      "\"\<../k0a_0.5pi_on.re.out\>\""}], ",", "Number", ",", 
+     RowBox[{"RecordLists", "\[Rule]", "True"}]}], "]"}]}], ";", " ", 
   RowBox[{"(*", " ", 
    RowBox[{"real", " ", "part"}], "*)"}]}]], "Input",
  CellChangeTimes->{{3.68590352509446*^9, 3.6859035460681257`*^9}, {
@@ -70,18 +69,21 @@ Cell[BoxData[
    3.686138896349057*^9, 3.6861389003993607`*^9}, {3.686139565370081*^9, 
    3.686139576468504*^9}, {3.686139697280517*^9, 3.6861396995838547`*^9}, 
    3.686140777085886*^9, {3.6861414028791428`*^9, 3.6861414090320187`*^9}, {
-   3.6861420510353107`*^9, 3.686142058221898*^9}}],
+   3.6861420510353107`*^9, 3.686142058221898*^9}, {3.686262079584332*^9, 
+   3.6862620839995604`*^9}, 3.686262179053034*^9, {3.6862622131112537`*^9, 
+   3.6862622134960957`*^9}, {3.686262265233096*^9, 3.6862622851836767`*^9}, {
+   3.686262449030333*^9, 3.686262452105942*^9}, {3.6862625205051327`*^9, 
+   3.686262523464409*^9}, 3.686262598913431*^9}],
 
 Cell[BoxData[
  RowBox[{
-  RowBox[{
-   RowBox[{"bI", "=", 
-    RowBox[{"Import", "[", 
+  RowBox[{"bI", "=", 
+   RowBox[{"ReadList", "[", 
+    RowBox[{
      RowBox[{
-      RowBox[{
-       RowBox[{"NotebookDirectory", "[", "]"}], "<>", 
-       "\"\<../k0a_0.5pi_on.im.out\>\""}], ",", "\"\<Table\>\""}], "]"}]}], 
-   ";"}], " ", 
+      RowBox[{"NotebookDirectory", "[", "]"}], "<>", 
+      "\"\<../k0a_0.5pi_on.im.out\>\""}], ",", "Number", ",", 
+     RowBox[{"RecordLists", "\[Rule]", "True"}]}], "]"}]}], ";", " ", 
   RowBox[{"(*", " ", 
    RowBox[{"imaginary", " ", "part"}], "*)"}]}]], "Input",
  CellChangeTimes->{{3.68590352509446*^9, 3.6859035460681257`*^9}, {
@@ -93,7 +95,7 @@ Cell[BoxData[
    3.686139803241754*^9, 3.686139803537619*^9}, {3.686139936742548*^9, 
    3.6861399381636133`*^9}, {3.68614066425288*^9, 3.686140665048378*^9}, {
    3.686141416099324*^9, 3.686141422445628*^9}, {3.6861420626680927`*^9, 
-   3.68614206376423*^9}}],
+   3.68614206376423*^9}, {3.686264387580287*^9, 3.686264394230522*^9}}],
 
 Cell[BoxData[
  RowBox[{"(*", " ", 
@@ -301,20 +303,20 @@ Cell[557, 20, 178, 3, 28, "Input"],
 Cell[738, 25, 490, 9, 28, "Input"],
 Cell[1231, 36, 446, 8, 28, "Input"],
 Cell[1680, 46, 185, 4, 28, "Input"],
-Cell[1868, 52, 980, 20, 28, "Input"],
-Cell[2851, 74, 1020, 21, 28, "Input"],
-Cell[3874, 97, 204, 4, 28, "Input"],
-Cell[4081, 103, 471, 10, 28, "Input"],
-Cell[4555, 115, 413, 8, 28, "Input"],
-Cell[4971, 125, 243, 6, 28, "Input"],
-Cell[5217, 133, 202, 5, 28, "Input"],
-Cell[5422, 140, 326, 8, 28, "Input"],
-Cell[5751, 150, 330, 6, 28, "Input"],
-Cell[6084, 158, 1572, 35, 46, "Input"],
-Cell[7659, 195, 245, 5, 28, "Input"],
-Cell[7907, 202, 1159, 30, 46, "Input"],
-Cell[9069, 234, 233, 5, 28, "Input"],
-Cell[9305, 241, 1407, 39, 46, "Input"]
+Cell[1868, 52, 1307, 23, 28, "Input"],
+Cell[3178, 77, 1093, 20, 28, "Input"],
+Cell[4274, 99, 204, 4, 28, "Input"],
+Cell[4481, 105, 471, 10, 28, "Input"],
+Cell[4955, 117, 413, 8, 28, "Input"],
+Cell[5371, 127, 243, 6, 28, "Input"],
+Cell[5617, 135, 202, 5, 28, "Input"],
+Cell[5822, 142, 326, 8, 28, "Input"],
+Cell[6151, 152, 330, 6, 28, "Input"],
+Cell[6484, 160, 1572, 35, 46, "Input"],
+Cell[8059, 197, 245, 5, 28, "Input"],
+Cell[8307, 204, 1159, 30, 46, "Input"],
+Cell[9469, 236, 233, 5, 28, "Input"],
+Cell[9705, 243, 1407, 39, 46, "Input"]
 }
 ]
 *)
