@@ -13,15 +13,15 @@ int main(int argc, char **argv)
    }
    
    printf("FDTD: solving 1+1D delay PDE\n");
-   printf("This code is released under the WTFPL license, without any warranty;\n");
-   printf("see http://www.wtfpl.net/ for more details.\n");
-   printf("Copyright (c) 2016 Leo Fang\n");
+   printf("This code is released under the WTFPL license without any warranty.\n");
+   printf("See http://www.wtfpl.net/ for more details.\n");
+   printf("Copyright (c) 2016 Leo Fang\n\n");
    //printf("For the academic uses, citation to (ref) is strongly encouraged but not required.\n");
    
-   printf("FDTD: preparing the grid...");
+   printf("FDTD: preparing the grid..."); fflush(stdout);
    grid * simulation = initialize_grid(argv[1]);
    printf("Done!\n");
-   printf("FDTD: simulation starts...");
+   printf("FDTD: simulation starts..."); fflush(stdout);
 
    // W = (i*w0+Gamma/2)
    complex W = simulation->w0*I+0.5*simulation->Gamma;
@@ -99,10 +99,9 @@ int main(int argc, char **argv)
            simulation->psi[j][i] /= (1./simulation->Delta+0.25*W);
        }
    }
-
    printf("Done!\n");
 
-   printf("FDTD: writing results to files...");
+   printf("FDTD: writing results to files..."); fflush(stdout);
 //   print_initial_condition(simulation);
 //   print_boundary_condition(simulation);
 //   printf("******************************************\n");

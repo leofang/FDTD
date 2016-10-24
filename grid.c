@@ -21,7 +21,7 @@ complex incomplete_gamma(int n, complex x)
 {
    if(n<=0)
    {
-      fprintf(stderr, "Error in incomplete_gamma: n must >= 1. Abort!\n");
+      fprintf(stderr, "Error in %s: n must >= 1. Abort!\n", __func__);
       exit(EXIT_FAILURE);
    }
 
@@ -85,7 +85,7 @@ void initial_condition(grid * simulation)
     simulation->psit0 = calloc(2*simulation->Nx+1, sizeof(*simulation->psit0));
     if(!simulation->psit0)
     { 
-        perror("initialCondition: cannot allocate memory. Abort!\n");
+        perror("initial_condition: cannot allocate memory. Abort!\n");
         exit(EXIT_FAILURE);
     }
     simulation->psit0_size = 2*simulation->Nx+1;
@@ -105,7 +105,7 @@ void boundary_condition(grid * simulation)
     simulation->psix0 = malloc( simulation->Ny*sizeof(*simulation->psix0) );
     if(!simulation->psix0)
     { 
-        perror("boundaryCondition: cannot allocate memory. Abort!\n");
+        perror("boundary_condition: cannot allocate memory. Abort!\n");
         exit(EXIT_FAILURE);
     }
     simulation->psix0_x_size = simulation->nx+1;
@@ -116,7 +116,7 @@ void boundary_condition(grid * simulation)
         simulation->psix0[j] = calloc(simulation->nx+1, sizeof(*simulation->psix0[j])); 
         if(!simulation->psix0[j])
         { 
-            fprintf(stderr, "boundaryCondition: cannot allocate memory at t=%d*Delta. Abort!\n", j);
+            fprintf(stderr, "%s: cannot allocate memory at t=%d*Delta. Abort!\n", __func__, j);
             exit(EXIT_FAILURE);
         }
         simulation->psix0_y_size++;
@@ -136,7 +136,7 @@ void initialize_psi(grid * simulation)
     simulation->psi = malloc( simulation->Ny*sizeof(*simulation->psi) );
     if(!simulation->psi)
     { 
-        perror("initializePsi: cannot allocate memory. Abort!\n");
+        perror("initialize_psi: cannot allocate memory. Abort!\n");
         exit(EXIT_FAILURE);
     }
     simulation->psi_x_size = simulation->Ntotal;
@@ -146,7 +146,7 @@ void initialize_psi(grid * simulation)
         simulation->psi[j] = calloc( simulation->Ntotal, sizeof(*simulation->psi[j]) );
         if(!simulation->psi[j])
         { 
-            fprintf(stderr, "initializePsi: cannot allocate memory at t=%d*Delta. Abort!\n", j);
+            fprintf(stderr, "%s: cannot allocate memory at t=%d*Delta. Abort!\n", __func__, j);
             exit(EXIT_FAILURE);
         }
         simulation->psi_y_size++;
@@ -167,17 +167,23 @@ void sanity_check(grid * simulation)
     //nx must be multiple of 2
     if(simulation->nx % 2) 
     {
-        fprintf(stderr, "sanity_check: nx must be an integer multiple of 2. Abort!\n");
+        fprintf(stderr, "%s: nx must be an integer multiple of 2. Abort!\n", __func__);
         exit(EXIT_FAILURE);
     }   
 
     //nx<=2Nx
     if(simulation->nx > 2*simulation->Nx)
     {
-        fprintf(stderr, "sanity_check: nx must be smaller than, or at most equal to, twice of Nx (nx<=2Nx). Abort!\n");
+        fprintf(stderr, "%s: nx must be smaller than, or at most equal to, twice of Nx (nx<=2Nx). Abort!\n", __func__);
         exit(EXIT_FAILURE);
-    }   
+    } 
 
+    //Nyquist limit
+    if(simulation->k >= M_PI/simulation->Delta || simulation->w0 >= M_PI/simulation->Delta)
+    {
+        fprintf(stderr, "%s: k or w0 must be smaller than pi/Delta in order not to reach the Nyquist limit. Abort!\n", __func__);
+        exit(EXIT_FAILURE);
+    }
 }
 
 
@@ -217,7 +223,7 @@ grid * initialize_grid(const char * filename)
    grid * FDTDsimulation = malloc(sizeof(*FDTDsimulation));
    if(!FDTDsimulation)
    {
-      perror("initializeGrid: could not allocate memory. Abort!\n");
+      perror("initialize_grid: could not allocate memory. Abort!\n");
       exit(EXIT_FAILURE);
    }
    
@@ -331,7 +337,7 @@ void save_psi(grid * simulation, const char * filename, double (*part)(complex))
        strcat(str, ".abs.out");
     else
     {
-       fprintf(stderr, "Warning: default filename is used.\n");
+       fprintf(stderr, "%s: Warning: default filename is used.\n", __func__);
        strcat(str, ".out");
     }
 
