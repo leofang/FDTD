@@ -1,7 +1,18 @@
+/*
+ * Copyright (C) 2016 Leo Fang <leofang@phy.duke.edu>
+ *
+ * This program is free software. It comes without any warranty,
+ * to the extent permitted by applicable law. You can redistribute
+ * it and/or modify it under the terms of the WTFPL, Version 2, as
+ * published by Sam Hocevar. See the accompanying LICENSE file or
+ * http://www.wtfpl.net/ for more details.
+ */
+
 #include <stdlib.h>
 #include <math.h>
 #include "kv.h"
 #include "grid.h"
+#include "dynamics.h"
 #include <string.h>
 #include <float.h> //for DBL_EPSILON ~ 2.2E-16
 
@@ -348,6 +359,52 @@ void save_psi(grid * simulation, const char * filename, double (*part)(complex))
         for(int i=0; i<simulation->Ntotal; i++)
         {
             fprintf( f, "%.7f ", part(simulation->psi[j][i]) );
+        }
+        fprintf( f, "\n");
+    }
+
+    fclose(f);
+    free(str);
+}
+
+
+//this function computes the two-photon wavefunction on the fly and
+//then writes to a file, so no extra memory is allocated;
+//the third argument "part" can be any function converting a
+//complex to a double, e.g., creal, cimag, cabs, etc.
+void save_chi(grid * simulation, const char * filename, double (*part)(complex))
+{
+    char * str = strdup(filename);
+    str = realloc(str, (strlen(filename)+15)*sizeof(char) );
+
+    if(part == &creal)
+       strcat(str, ".re_chi.out");
+    else if(part == &cimag)
+       strcat(str, ".im_chi.out");
+    else if(part == &cabs)
+       strcat(str, ".abs_chi.out");
+    else
+    {
+       fprintf(stderr, "%s: Warning: default filename is used.\n", __func__);
+       strcat(str, ".chi.out");
+    }
+
+    FILE * f = fopen(str, "w");
+
+    //compute chi(a+Delta, a+Delta+tau, t) with tau=i*Delta and t=j*Delta
+    //j must >= simulation->minus_a_index in order to let signal from the 1st qubit reach the boundary
+    complex chi = 0;
+    for(int j=(simulation->Nx+simulation->nx/2+1); j<=simulation->Ny; j++)
+    {
+        for(int i=0; i<=simulation->Nx-simulation->nx/2; i++)
+        {
+	    chi = two_photon_input(simulation->plus_a_index+1, simulation->plus_a_index+1+i, simulation)-sqrt(simulation->Gamma)/2.0* \
+		  (  simulation->psi[j-(simulation->nx+i+1)][simulation->minus_a_index-i] \
+		   - simulation->psi[j-(i+1)][simulation->plus_a_index-i] \
+		   + simulation->psi[j-(simulation->nx+1)][simulation->minus_a_index+i] \
+		   - simulation->psi[j-1][simulation->plus_a_index+i] \
+		  );
+            fprintf( f, "%.4f ", part(chi) );
         }
         fprintf( f, "\n");
     }

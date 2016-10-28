@@ -1,7 +1,17 @@
+/*
+ * Copyright (C) 2016 Leo Fang <leofang@phy.duke.edu>
+ *
+ * This program is free software. It comes without any warranty,
+ * to the extent permitted by applicable law. You can redistribute
+ * it and/or modify it under the terms of the WTFPL, Version 2, as
+ * published by Sam Hocevar. See the accompanying LICENSE file or
+ * http://www.wtfpl.net/ for more details.
+ */
+
 #include <math.h>
 #include "grid.h"
 #include "kv.h"
-#include "dynamics.h"
+//#include "dynamics.h"
 
 
 int main(int argc, char **argv)
@@ -109,6 +119,7 @@ int main(int argc, char **argv)
 //   print_grid(simulation);
    save_psi(simulation, argv[1], creal);
    save_psi(simulation, argv[1], cimag);
+   save_chi(simulation, argv[1], cabs);
    printf("Done!\n");
 
    free_grid(simulation);
