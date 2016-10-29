@@ -25,6 +25,8 @@ depend:
 	makedepend -- $(CFLAGS) -- $(SRCS)
 
 
-grid.o: kv.h grid.h dynamics.h
+# DO NOT DELETE
+
+grid.o: kv.h grid.h
 kv.o: kv.h
 main.o: grid.h kv.h dynamics.h

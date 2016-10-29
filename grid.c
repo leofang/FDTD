@@ -12,7 +12,7 @@
 #include <math.h>
 #include "kv.h"
 #include "grid.h"
-#include "dynamics.h"
+//#include "dynamics.h"
 #include <string.h>
 #include <float.h> //for DBL_EPSILON ~ 2.2E-16
 
@@ -398,7 +398,7 @@ void save_chi(grid * simulation, const char * filename, double (*part)(complex))
     {
         for(int i=0; i<=simulation->Nx-simulation->nx/2; i++)
         {
-	    chi = two_photon_input(simulation->plus_a_index+1, simulation->plus_a_index+1+i, simulation)-sqrt(simulation->Gamma)/2.0* \
+	    chi = cexp(I * simulation->k * (2*simulation->plus_a_index+2+i)*simulation->Delta) -sqrt(simulation->Gamma)/2.0* \
 		  (  simulation->psi[j-(simulation->nx+i+1)][simulation->minus_a_index-i] \
 		   - simulation->psi[j-(i+1)][simulation->plus_a_index-i] \
 		   + simulation->psi[j-(simulation->nx+1)][simulation->minus_a_index+i] \

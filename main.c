@@ -11,7 +11,7 @@
 #include <math.h>
 #include "grid.h"
 #include "kv.h"
-//#include "dynamics.h"
+#include "dynamics.h"
 
 
 int main(int argc, char **argv)
@@ -23,9 +23,9 @@ int main(int argc, char **argv)
    }
    
    printf("FDTD: solving 1+1D delay PDE\n");
-   printf("This code is released under the WTFPL license without any warranty.\n");
-   printf("See http://www.wtfpl.net/ for more details.\n");
-   printf("Copyright (c) 2016 Leo Fang\n\n");
+   printf("This code is released under the WTFPL without any warranty.\n");
+   printf("See LICENSE or http://www.wtfpl.net/ for more details.\n");
+   printf("Copyright (C) 2016 Leo Fang\n\n");
    //printf("For the academic uses, citation to (ref) is strongly encouraged but not required.\n");
    
    printf("FDTD: preparing the grid..."); fflush(stdout);
