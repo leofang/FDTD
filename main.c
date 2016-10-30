@@ -28,10 +28,10 @@ int main(int argc, char **argv)
    printf("Copyright (C) 2016 Leo Fang\n\n");
    //printf("For the academic uses, citation to (ref) is strongly encouraged but not required.\n");
    
-   printf("FDTD: preparing the grid..."); fflush(stdout);
+   printf("FDTD: preparing the grid...\n");
    grid * simulation = initialize_grid(argv[1]);
-   printf("Done!\n");
-   printf("FDTD: simulation starts..."); fflush(stdout);
+//   printf("\033[F\033[2KFDTD: preparing the grid...Done!\n");
+   printf("FDTD: simulation starts...\n");// fflush(stdout);
 
    // W = (i*w0+Gamma/2)
    complex W = simulation->w0*I+0.5*simulation->Gamma;
@@ -109,18 +109,22 @@ int main(int argc, char **argv)
            simulation->psi[j][i] /= (1./simulation->Delta+0.25*W);
        }
    }
-   printf("Done!\n");
+   //printf("Done!\n");
 
-   printf("FDTD: writing results to files..."); fflush(stdout);
+   printf("FDTD: writing results to files...\n");// fflush(stdout);
 //   print_initial_condition(simulation);
 //   print_boundary_condition(simulation);
 //   printf("******************************************\n");
 //   print_psi(simulation);
 //   print_grid(simulation);
-   save_psi(simulation, argv[1], creal);
-   save_psi(simulation, argv[1], cimag);
-   save_chi(simulation, argv[1], cabs);
-   printf("Done!\n");
+   if(simulation->save_psi)
+   {
+      save_psi(simulation, argv[1], creal);
+      save_psi(simulation, argv[1], cimag);
+   }
+   if(simulation->save_chi)
+      save_chi(simulation, argv[1], cabs);
+   //printf("Done!\n");
 
    free_grid(simulation);
 

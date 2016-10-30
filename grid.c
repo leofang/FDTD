@@ -195,6 +195,13 @@ void sanity_check(grid * simulation)
         fprintf(stderr, "%s: k or w0 must be smaller than pi/Delta in order not to reach the Nyquist limit. Abort!\n", __func__);
         exit(EXIT_FAILURE);
     }
+
+    //poka-yoke: meaningless if one performs the computation without saving any result
+    if(!simulation->save_chi && !simulation->save_psi)
+    {
+        fprintf(stderr, "%s: either save_chi or save_psi has to be 1. Abort!\n", __func__);
+        exit(EXIT_FAILURE);
+    }
 }
 
 
@@ -255,6 +262,10 @@ grid * initialize_grid(const char * filename)
    FDTDsimulation->plus_a_index  = FDTDsimulation->Nx + 3*FDTDsimulation->nx/2 + 1;
    FDTDsimulation->minus_a_index = FDTDsimulation->Nx + FDTDsimulation->nx/2 + 1;
    FDTDsimulation->origin_index  = FDTDsimulation->Nx + FDTDsimulation->nx + 1;
+   FDTDsimulation->save_chi      = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_chi") ? \
+				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_chi")) : 0); //default: off
+   FDTDsimulation->save_psi      = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi") ? \
+				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi")) : 0); //default: off
 
    //check the validity of parameters
    sanity_check(FDTDsimulation);

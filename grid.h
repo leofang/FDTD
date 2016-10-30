@@ -78,6 +78,10 @@ struct _grid
    int psix0_x_size; //array size of psix0 in x
    int psix0_y_size; //array size of psix0 in t
 
+   //program options
+   int save_chi;  //whether or not to save the two-photon wavefunction to file (default: no)
+   int save_psi;  //whether or not to save the wavefunction to file (default: no)
+
    //input parameters (stored for convenience)
    kvarray_t * parameters_key_value_pair;
 };

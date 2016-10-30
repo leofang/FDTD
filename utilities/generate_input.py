@@ -24,6 +24,10 @@ nx = 200
 Nx = 25
 # number of (qubit) wavelength in t direction
 Ny = 50
+# save the result of psi (solution of delay PDE)?
+save_psi = 0
+# save the result of chi (two-photon wavefunction)?
+save_chi = 1
 
 ########## Physics Paramters ###########
 # qubit frequency (in Gamma)
@@ -74,4 +78,6 @@ f.write("Delta=%.10f\n"%Delta)
 f.write("k=%.10f\n"%k)
 f.write("w0=%.10f\n"%w0)
 f.write("Gamma=%.10f\n"%Gamma)
+f.write("save_chi=%i\n"%save_chi)
+f.write("save_psi=%i\n"%save_psi)
 f.close()

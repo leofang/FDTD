@@ -119,6 +119,7 @@ kvarray_t * readKVs(const char * fname) {
   return kvarray;
 }
 
+
 void freeKVs(kvarray_t * pairs) {
   for(int i=0; i<pairs->kvpair_len; i++)
   {
@@ -130,10 +131,12 @@ void freeKVs(kvarray_t * pairs) {
   free(pairs);
 }
 
+
 void printKVs(kvarray_t * pairs) {
   for(int i=0; i<pairs->kvpair_len; i++)
      printf("key = '%s' value = '%s'\n", pairs->kvpair[i]->key, pairs->kvpair[i]->value);
 }
+
 
 char * lookupValue(kvarray_t * pairs, const char * key) {
   const char * str1=NULL;
@@ -154,8 +157,9 @@ char * lookupValue(kvarray_t * pairs, const char * key) {
   
   if(!found_key)
   {
-      fprintf(stderr, "Input parameter %s is not found. Abort!\n", key);
-      exit(EXIT_FAILURE);
+      printf("%s: input parameter %s is not found.\n", __func__, key);
+      return NULL;
+//      exit(EXIT_FAILURE);
   }
   else
       return pairs->kvpair[key_index]->value;
