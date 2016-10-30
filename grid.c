@@ -358,7 +358,7 @@ void save_psi(grid * simulation, const char * filename, double (*part)(complex))
     {
         for(int i=0; i<simulation->Ntotal; i++)
         {
-            fprintf( f, "%.7f ", part(simulation->psi[j][i]) );
+            fprintf( f, "%.5f ", part(simulation->psi[j][i]) );
         }
         fprintf( f, "\n");
     }
