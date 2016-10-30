@@ -37,7 +37,8 @@ For the moment, only one kind of initial condition (two-photon plane wave) is bu
 ## Output
 Depending on the options, the following files will be generated: 
 * `save_psi`: `input_filename.re.out` and `input_filename.im.out` (real and imaginary parts, respectively, of the wavefunction described by the delay PDE). 
-* `save_chi`: `input_filename.abs_chi.out` (absolute value of the two-photon wavefunction).  
+* `save_chi`: `input_filename.abs_chi.out` (absolute value of the two-photon wavefunction).
+
 Note that these two options cannot be simultaneously turned off, or the program would generate nothing.
 
 A Mathematica notebook is provided in the `utilities` folder for simple plotting purposes.
