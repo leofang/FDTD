@@ -21,9 +21,9 @@ Delta = 0.01
 # number of grids in-between the qubit and its mirror image (nx = 2a/Delta)
 nx = 200
 # half of number of (qubit) wavelength in x direction
-Nx = 10
+Nx = 25
 # number of (qubit) wavelength in t direction
-Ny = 100
+Ny = 50
 
 ########## Physics Paramters ###########
 # qubit frequency (in Gamma)
