@@ -391,8 +391,10 @@ void save_chi(grid * simulation, const char * filename, double (*part)(complex))
 
     FILE * f = fopen(str, "w");
 
-    //compute chi(a+Delta, a+Delta+tau, t) with tau=i*Delta and t=j*Delta
-    //j must >= simulation->minus_a_index in order to let signal from the 1st qubit reach the boundary
+    //compute chi(a+Delta, a+Delta+tau, t) with tau=i*Delta and t=j*Delta:
+    //to make all terms in chi well-defined requires 0 <= i <= Nx-nx/2.
+    //Similarly, j must >= simulation->minus_a_index in order to let signal from the 1st qubit reach the boundary;
+    //put it differently, one cannot take data before the first light cone intersects with the boundary x=Nx*Delta.
     complex chi = 0;
     for(int j=(simulation->Nx+simulation->nx/2+1); j<=simulation->Ny; j++)
     {
