@@ -6,7 +6,7 @@
 # published by Sam Hocevar. See the accompanying LICENSE file or
 # http://www.wtfpl.net/ for more details.
 
-CFLAGS=-Wall -std=gnu99 -pedantic -ggdb3 #-O3 -Werror
+CFLAGS=-Wall -std=gnu99 -pedantic -O3 #-ggdb3 -Werror
 SRCS=$(wildcard *.c)
 OBJS=$(patsubst %.c, %.o, $(SRCS))
 PROGRAM=FDTD
