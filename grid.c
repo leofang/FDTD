@@ -52,7 +52,15 @@ complex incomplete_gamma(int n, complex x)
       sum += temp;
 
       if(cabs(temp) < DBL_EPSILON*cabs(sum)) //stop the sum when temp is extremely small
-         return prefactor*sum;
+      {
+         if(!isnan(prefactor*sum))
+            return prefactor*sum;
+         else
+         {
+            fprintf(stderr, "%s: NaN is produced (at n=%i and x=%.6f+%.6fI). Abort!\n", __func__, n, creal(x), cimag(x));
+            abort();
+         }
+      }
    }
 }
 
@@ -74,19 +82,25 @@ complex plane_wave_BC(int j, int i, grid * simulation)
     for(int n=1; n<=(j/simulation->nx); n++)
     {
         complex temp = cpow(0.5*Gamma, n-0.5) * \
-                       ( cpow(t-n*td, n) * cexp(n*(I*w0*td+0.5*Gamma*td)-I*w0*t-0.5*Gamma*t-lgamma(n+1) ) \
-                       + cpow(I, n)*(k-w0)*incomplete_gamma(n+1, -I*p*(t-n*td))*cexp(I*n*k*td-I*k*t)/cpow(p, n+1));
+                       ( cexp( n*log(t-n*td) + n*(I*w0*td+0.5*Gamma*td)-I*w0*t-0.5*Gamma*t-lgamma(n+1) ) \
+                       + (k-w0)*incomplete_gamma(n+1, -I*p*(t-n*td))*cexp( n*clog(I)+I*n*k*td-I*k*t-(n+1)*clog(p) ) );
 	sum += temp;
-	// based on my observation, for some chosen parameters the wavefunction converges 
-	// very fast, so one can just cut the summation off if the precision is reached.
-	// this also helps prevent some overflow issue a bit.
-        if(cabs(temp) < DBL_EPSILON*cabs(sum))
-           break;
+//	// based on my observation, for some chosen parameters the wavefunction converges 
+//	// very fast, so one can just cut the summation off if the precision is reached.
+//	// this also helps prevent some overflow issue a bit.
+//        if(cabs(temp) < DBL_EPSILON*cabs(sum))
+//           break;
     }
     e_t -= cexp(-0.5*I*k*td)*sum;
     e_t *= sqrt(2.)*cexp(I*k*(x-t)); // psi(x,t) = sqrt(2)e^{ik(x-t)}*e(t)
 
-    return e_t;
+    if(!isnan(e_t))
+       return e_t;
+    else
+    {
+       fprintf(stderr, "%s: NaN is produced (at j=%i and i=%i). Abort!\n", __func__, j, i);
+       abort();
+    }
 }
 
 
@@ -122,6 +136,7 @@ void boundary_condition(grid * simulation)
     simulation->psix0_x_size = simulation->nx+1;
     simulation->psix0_y_size = 0;
 
+    int progress = 0;
     for(int j=0; j<simulation->Ny; j++)
     {
         simulation->psix0[j] = calloc(simulation->nx+1, sizeof(*simulation->psix0[j])); 
@@ -138,7 +153,16 @@ void boundary_condition(grid * simulation)
     {
         for(int i=0; i<simulation->psix0_x_size; i++)
             simulation->psix0[j][i] = plane_wave_BC(j, i, simulation);
+
+        if(j%(simulation->Ny/10)==0)
+        {
+            printf("%s: %i%% prepared...\r", __func__, progress*10); fflush(stdout);
+            progress++;
+        }
     }
+
+    //wash out the status report
+    printf("                                                                           \r"); fflush(stdout);
 }
 
 
