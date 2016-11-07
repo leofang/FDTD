@@ -84,12 +84,14 @@ complex plane_wave_BC(int j, int i, grid * simulation)
         complex temp = cpow(0.5*Gamma, n-0.5) * \
                        ( cexp( n*log(t-n*td) + n*(I*w0*td+0.5*Gamma*td)-I*w0*t-0.5*Gamma*t-lgamma(n+1) ) \
                        + (k-w0)*incomplete_gamma(n+1, -I*p*(t-n*td))*cexp( n*clog(I)+I*n*k*td-I*k*t-(n+1)*clog(p) ) );
-	sum += temp;
-//	// based on my observation, for some chosen parameters the wavefunction converges 
-//	// very fast, so one can just cut the summation off if the precision is reached.
-//	// this also helps prevent some overflow issue a bit.
-//        if(cabs(temp) < DBL_EPSILON*cabs(sum))
-//           break;
+
+	// based on my observation, the wavefunction should converge very fast, 
+	// so one can just cut the summation off if the precision is reached.
+	// this also helps prevent some overflow issue a bit.
+        if( cabs(temp) < DBL_EPSILON*cabs(sum) || isnan(temp) )
+           break;
+        else
+	   sum += temp;
     }
     e_t -= cexp(-0.5*I*k*td)*sum;
     e_t *= sqrt(2.)*cexp(I*k*(x-t)); // psi(x,t) = sqrt(2)e^{ik(x-t)}*e(t)
