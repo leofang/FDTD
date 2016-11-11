@@ -8,6 +8,10 @@
  * http://www.wtfpl.net/ for more details.
  */
 
+#ifndef __SPECIAL_FUNCTION_H__
+#define __SPECIAL_FUNCTION_H__
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <tgmath.h>
@@ -106,3 +110,4 @@ complex incomplete_gamma(int n, complex x)
 }
 
 
+#endif
