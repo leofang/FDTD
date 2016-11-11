@@ -9,61 +9,10 @@
  */
 
 #include <stdlib.h>
-#include <math.h>
 #include "kv.h"
 #include "grid.h"
-//#include "dynamics.h"
+#include "special_function.h"
 #include <string.h>
-#include <float.h> //for DBL_EPSILON ~ 2.2E-16
-
-
-// Compute the incomplete Gamma function gamma(n,x). Note that gamma(n,x) 
-// is different from Gamma(n,x) (gamma(n,x)+Gamma(n,x)=1), and can be 
-// called in Mathematica by GammaRegularized[n, 0, x].
-//
-// The following implementation is based on Numerical Recipes Ch.6.2, where 
-// the infinite series representation Eq.6.2.5 is used for better precision 
-// and stability (the finite sum, Eq.10.70, in Arfken, 5th ed, P.661, which 
-// was implemented in the earlier version, is not useful as it subtracts two 
-// nearly same numbers). See also ASA032, ASA147 and ASA239.
-//
-// Note the normalization factor (n-1)!.
-complex incomplete_gamma(int n, complex x)
-{
-   if(n<=0)
-   {
-      fprintf(stderr, "Error in %s: n must >= 1. Abort!\n", __func__);
-      exit(EXIT_FAILURE);
-   }
-
-   //gamma(n>=1, x=0)=0, no need to do real computation
-   if(x==0)
-      return 0;
-
-   //compute exp(-x)*x^n/(n-1)!
-   complex prefactor = cexp(n*clog(x)-x-lgamma(n));
-
-   //compute the infinite sum
-   complex sum = 1.0/n;
-   complex temp = 1.0/n;
-   for(int i=1; ; i++)
-   {
-      temp *= x/(double)(n+i);
-      sum += temp;
-
-      if(cabs(temp) < DBL_EPSILON*cabs(sum)) //stop the sum when temp is extremely small
-      {
-         if(!isnan(prefactor*sum))
-            return prefactor*sum;
-         else
-         {
-            fprintf(stderr, "%s: NaN is produced (at n=%i and x=%.6f+%.6fI). Abort!\n", __func__, n, creal(x), cimag(x));
-            abort();
-         }
-      }
-   }
-}
-
 
 // This function returns the solution psi[j][i] in x<-a subject to incident plane wave
 complex plane_wave_BC(int j, int i, grid * simulation)

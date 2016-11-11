@@ -28,6 +28,6 @@ depend:
 # DO NOT DELETE
 
 dynamics.o: dynamics.h grid.h kv.h
-grid.o: kv.h grid.h
+grid.o: kv.h grid.h special_function.h
 kv.o: kv.h
 main.o: grid.h kv.h dynamics.h
