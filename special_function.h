@@ -16,17 +16,22 @@
 #include <float.h> //for DBL_EPSILON ~ 2.2E-16
 
 
-// Compute the incomplete Gamma function gamma(n,x). Note that gamma(n,x) 
-// is different from Gamma(n,x) (gamma(n,x)+Gamma(n,x)=1), and can be 
+// Compute the incomplete Gamma function gamma(n,x). Note that gamma(n,x)
+// is different from Gamma(n,x) (gamma(n,x)+Gamma(n,x)=1), and can be
 // called in Mathematica by GammaRegularized[n, 0, x].
 //
-// The following implementation is based on Numerical Recipes Ch.6.2, where 
-// the infinite series representation Eq.6.2.5 is used for better precision 
-// and stability (the finite sum, Eq.10.70, in Arfken, 5th ed, P.661, which 
-// was implemented in the earlier version, is not useful as it subtracts two 
-// nearly same numbers). See also ASA032, ASA147 and ASA239.
+// The following implementation is based on Numerical Recipes Ch.6.2, 3rd Ed,
+// where two different but complementary approaches are required:
+//    1. the infinite series representation (Eq.6.2.5)
+//    2. the continued fraction representation (Eq.6.2.7)
+// The combination hopefully covers the complex plane as much as possible.
+// See also ASA032, ASA147 and ASA239.
 //
-// Note the normalization factor (n-1)!.
+// Note that
+// 1. the normalization factor (n-1)!.
+// 2. the finite sum, Eq.10.70, in P.661, Arfken 5th ed, which was
+//    implemented in the earlier version, is not useful as it subtracts two
+//    nearly same numbers.
 complex incomplete_gamma(int n, complex x)
 {
    if(n<=0)
@@ -61,7 +66,8 @@ complex incomplete_gamma(int n, complex x)
       }
    }
    else
-   {//use the continuous fraction frac=(a1/b1+)(a2/b2+)(a3/b3+)...
+   {//use the continued fraction frac=(a1/b1+)(a2/b2+)(a3/b3+)...
+    //the notation follows Ch.5.2 of Numerical Recipes 3rd Ed.
       complex b = x+1.0-n;        //b1
       complex c = INFINITY;       //C1
       complex d = 1 / b;          //D1=a1/b1
@@ -96,7 +102,7 @@ complex incomplete_gamma(int n, complex x)
    }
 
    fprintf(stderr, "%s: NaN is produced (at n=%i and x=%.6f+%.6fI). Abort!\n", __func__, n, creal(x), cimag(x));
-   abort();
+   exit(EXIT_FAILURE);
 }
 
 
