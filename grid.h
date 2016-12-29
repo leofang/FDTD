@@ -64,7 +64,8 @@ struct _grid
    //physics parameters
    double k;     // incident frequency (in units of 1/Delta)   
    double w0;    // qubit frequency    (in units of 1/Delta)
-   double Gamma; // qubit decay rate   (in units of 1/Delta) 
+   double Gamma; // qubit decay rate   (in units of 1/Delta)
+   double alpha; // exponential tail   (dimensionless)
 
    //actual info on dynamics
    complex * psit0;  //initial condition psi(x,0) (stored as psi0[x])
@@ -81,6 +82,7 @@ struct _grid
    //program options
    int save_chi;  //whether or not to save the two-photon wavefunction to file (default: no)
    int save_psi;  //whether or not to save the wavefunction to file (default: no)
+   int init_cond; //the initial condition of the wavefunction (default: unspecified)
 
    //input parameters (stored for convenience)
    kvarray_t * parameters_key_value_pair;

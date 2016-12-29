@@ -12,6 +12,7 @@
 #include "kv.h"
 #include "grid.h"
 #include "special_function.h"
+#include "dynamics.h"
 #include <string.h>
 
 // This function returns the solution psi[j][i] in x<-a subject to incident plane wave
@@ -55,6 +56,43 @@ complex plane_wave_BC(int j, int i, grid * simulation)
 }
 
 
+// This function returns the solution psi[j][i] in x<-a subject to single-photon exponential wavepacket //TODO
+complex exponential_BC(int j, int i, grid * simulation)
+{
+    double x = (i-simulation->origin_index)*simulation->Delta;
+    double t = j*simulation->Delta;
+    double td = simulation->nx*simulation->Delta;
+    double k = simulation->k;
+    double w0 = simulation->w0;
+    double Gamma = simulation->Gamma;
+    complex W = I*w0 + 0.5*Gamma;
+
+    complex sum = 0;
+    for(int n=1; n<=(j/simulation->nx); n++)
+    {
+        complex temp = exp(-lgamma(n+1)) * cpow(0.5*Gamma*cexp(W*td)*(t-n*td), n);
+
+	// based on my observation, the wavefunction should converge very fast, 
+	// so one can just cut the summation off if the precision is reached.
+	// this also helps prevent some overflow issue a bit.
+        if( cabs(temp) < DBL_EPSILON*cabs(sum) || isnan(temp) )
+           break;
+        else
+	   sum += temp;
+    }
+    complex e_t = cexp(-W*t)*(1.0+sum);
+    e_t *= one_photon_exponential(i-j, simulation); // psi(x,t) = psi(x-t, 0) * e(t)
+
+    if(!isnan(e_t))
+       return e_t;
+    else
+    {
+       fprintf(stderr, "%s: NaN is produced (at j=%i and i=%i). Abort!\n", __func__, j, i);
+       abort();
+    }
+}
+
+
 void initial_condition(grid * simulation)
 {// the initial condition is given in-between x/Delta = [-Nx, Nx] for simplicity
 
@@ -66,11 +104,13 @@ void initial_condition(grid * simulation)
     }
     simulation->psit0_size = 2*simulation->Nx+1;
 
-    //TODO: make a flexible option for other initial conditions
-//    for(int i=0; i<simulation->psit0_size; i++)
-//    {
-//        simulation->psit0[i] = 0; //for two-photon plane wave input
-//    }
+    //for nonzero initial conditions
+    if(simulation->init_cond == 2) //single-photon exponential wavepacket
+    {
+       for(int i=0; i<simulation->psit0_size; i++)
+           simulation->psit0[i] = one_photon_exponential(i+simulation->nx+1, simulation);
+    }
+    //TODO: add other I.C. here
 }
 
 
@@ -99,11 +139,25 @@ void boundary_condition(grid * simulation)
         simulation->psix0_y_size++;
     }
 
-    //TODO: make a flexible option for other boundary conditions
     for(int j=0; j<simulation->psix0_y_size; j++)
     {
-        for(int i=0; i<simulation->psix0_x_size; i++)
-            simulation->psix0[j][i] = plane_wave_BC(j, i, simulation);
+        switch(simulation->init_cond)
+	{
+	   case 1: { //two-photon plane wave
+                 for(int i=0; i<simulation->psix0_x_size; i++)
+                     simulation->psix0[j][i] = plane_wave_BC(j, i, simulation);
+	      }
+	      break;
+	   case 2: { //single-photon exponential wavepacket
+                 for(int i=0; i<simulation->psix0_x_size; i++)
+                     simulation->psix0[j][i] = exponential_BC(j, i, simulation);
+	      }
+	      break;
+	   default: { //bad input
+              fprintf(stderr, "%s: invalid option. Abort!\n", __func__);
+              exit(EXIT_FAILURE);
+	      } 
+        }
 
         if(j%(simulation->Ny/10)==0)
         {
@@ -177,6 +231,21 @@ void sanity_check(grid * simulation)
         fprintf(stderr, "%s: either save_chi or save_psi has to be 1. Abort!\n", __func__);
         exit(EXIT_FAILURE);
     }
+
+    //poka-yoke: meaningless if the initial condition is not correctly given
+    //currently the allowed values are:
+    //1 (two-photon plane wave)
+    //2 (single-photon exponential wavepacket)
+    if(simulation->init_cond < 1 || simulation->init_cond > 2)
+    {
+        fprintf(stderr, "%s: init_cond has to be 1 or 2. Abort!\n", __func__);
+        exit(EXIT_FAILURE);
+    }
+    else if(simulation->init_cond == 2 && !lookupValue(simulation->parameters_key_value_pair, "alpha"))
+    {//want to use exponential wavepacket but forget to set alpha's value
+        fprintf(stderr, "%s: alpha is not given. Abort!\n", __func__);
+        exit(EXIT_FAILURE);
+    }
 }
 
 
@@ -241,6 +310,10 @@ grid * initialize_grid(const char * filename)
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_chi")) : 0); //default: off
    FDTDsimulation->save_psi      = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi") ? \
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi")) : 0); //default: off
+   FDTDsimulation->init_cond     = (lookupValue(FDTDsimulation->parameters_key_value_pair, "init_cond") ? \
+	                           atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "init_cond")) : 0); //default: 0 (unspecified)
+   FDTDsimulation->alpha         = (lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha") ? \
+	                           atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha")) : 0);    //default: 0
 
    //check the validity of parameters
    sanity_check(FDTDsimulation);

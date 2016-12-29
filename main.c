@@ -89,7 +89,7 @@ int main(int argc, char **argv)
            }
    
            //two-photon input: 2*( chi(x-t,-a-t, 0)-chi(x-t,a-t,0) )
-           if( j-i>=-simulation->minus_a_index ) //it's nonzero only when t-x-a>=0 
+           if( simulation->init_cond == 1 && j-i>=-simulation->minus_a_index ) //it's nonzero only when t-x-a>=0 
            { 
                double on_light_cone = (j-i == -simulation->minus_a_index?0.5:1.0);
 
@@ -121,6 +121,7 @@ int main(int argc, char **argv)
    {
       save_psi(simulation, argv[1], creal);
       save_psi(simulation, argv[1], cimag);
+      //save_psi(simulation, argv[1], cabs);
    }
    if(simulation->save_chi)
       save_chi(simulation, argv[1], cabs);

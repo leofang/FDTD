@@ -76,3 +76,16 @@ complex two_photon_input(int i1, int i2, grid * simulation)
    //Two-photon plane waves
    return cexp( I * simulation->k * (x1+x2) );
 }
+
+
+// this function computes the exponential wavepacket with a sharp wavefront at x=-a
+complex one_photon_exponential(int i, grid * simulation)
+{
+   if(i>simulation->minus_a_index)
+      return 0;
+
+   double x = (i - simulation->origin_index) * simulation->Delta;
+   double a_g = simulation->alpha*simulation->Gamma; 
+   
+   return I*csqrt(a_g) * cexp(I*simulation->k*x + 0.5*a_g*(x+0.5*simulation->nx*simulation->Delta));
+}
