@@ -19,24 +19,27 @@ from math import ceil
 # grid size
 Delta = 0.01
 # number of grids in-between the qubit and its mirror image (nx = 2a/Delta)
-nx = 200
+nx = 2050
 # half of number of (qubit) wavelength in x direction
-Nx = 25
+Nx = 50
 # number of (qubit) wavelength in t direction
-Ny = 50
+Ny = 400
 # save the result of psi (solution of delay PDE)?
 save_psi = 0
 # save the result of chi (two-photon wavefunction)?
 save_chi = 1
 
 ########## Physics Paramters ###########
+# initial condition (1: two-photon plane wave; 2: one-photon exponential wavepacket)
+init_cond = 2
+# exponential tail (used if init_cond=2; dimensionless)
+alpha = 1
 # qubit frequency (in Gamma)
-k0 = 20.0
+k0 = 100.0
 # incident frequency (in Gamma)
-k = 20.0
+k = 100.0
 # k0 a = n pi
-n = 0.5
-
+n = 20.5
 
 
 ########################################
@@ -80,4 +83,6 @@ f.write("w0=%.10f\n"%w0)
 f.write("Gamma=%.10f\n"%Gamma)
 f.write("save_chi=%i\n"%save_chi)
 f.write("save_psi=%i\n"%save_psi)
+f.write("init_cond=%i\n"%init_cond)
+f.write("alpha=%f\n"%alpha)
 f.close()
