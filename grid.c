@@ -202,6 +202,7 @@ void initialize_psi(grid * simulation)
 }
 
 
+//a set of checks (poka-yoke) that make sure the input file is sane
 void sanity_check(grid * simulation)
 {
     //nx must be multiple of 2
@@ -225,14 +226,21 @@ void sanity_check(grid * simulation)
         exit(EXIT_FAILURE);
     }
 
-    //poka-yoke: meaningless if one performs the computation without saving any result
+    //it is meaningless if one performs the computation without saving any result
     if(!simulation->save_chi && !simulation->save_psi)
     {
         fprintf(stderr, "%s: either save_chi or save_psi has to be 1. Abort!\n", __func__);
         exit(EXIT_FAILURE);
     }
 
-    //poka-yoke: meaningless if the initial condition is not correctly given
+    //if Ny is too small then no result will be written to file
+    if(simulation->save_chi && (simulation->Ny <= simulation->Nx + simulation->nx/2))
+    {
+        fprintf(stderr, "%s: Ny needs to be larger than Nx+nx/2, or \"chi\" will not be stored. Abort!\n", __func__);
+        exit(EXIT_FAILURE);
+    }
+
+    //check if the initial condition is not correctly given
     //currently the allowed values are:
     //1 (two-photon plane wave)
     //2 (single-photon exponential wavepacket)
@@ -313,7 +321,7 @@ grid * initialize_grid(const char * filename)
    FDTDsimulation->init_cond     = (lookupValue(FDTDsimulation->parameters_key_value_pair, "init_cond") ? \
 	                           atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "init_cond")) : 0); //default: 0 (unspecified)
    FDTDsimulation->alpha         = (lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha") ? \
-	                           atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha")) : 0);    //default: 0
+	                           strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha"), NULL) : 0);    //default: 0
 
    //check the validity of parameters
    sanity_check(FDTDsimulation);
