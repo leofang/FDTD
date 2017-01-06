@@ -80,9 +80,10 @@ struct _grid
    int psix0_y_size; //array size of psix0 in t
 
    //program options
-   int save_chi;  //whether or not to save the two-photon wavefunction to file (default: no)
-   int save_psi;  //whether or not to save the wavefunction to file (default: no)
-   int init_cond; //the initial condition of the wavefunction (default: unspecified)
+   int save_chi;         //whether or not to save the two-photon wavefunction to file (default: no)
+   int save_psi;         //whether or not to save the wavefunction to file (default: no)
+   int save_psi_binary;  //whether or not to save the wavefunction to binary file (default: no)
+   int init_cond;       //the initial condition of the wavefunction (default: unspecified)
 
    //input parameters (stored for convenience)
    kvarray_t * parameters_key_value_pair;
@@ -102,6 +103,7 @@ void print_boundary_condition(grid * simulation);
 void print_grid(grid * simulation);
 void print_psi(grid * simulation);
 void save_psi(grid * simulation, const char * filename, double (*part)(complex));
+void save_psi_binary(grid * simulation, const char * filename);
 void save_chi(grid * simulation, const char * filename, double (*part)(complex));
 
 

@@ -123,6 +123,8 @@ int main(int argc, char **argv)
       save_psi(simulation, argv[1], cimag);
       //save_psi(simulation, argv[1], cabs);
    }
+   if(simulation->save_psi_binary)
+      save_psi_binary(simulation, argv[1]);
    if(simulation->save_chi)
       save_chi(simulation, argv[1], cabs);
    //printf("Done!\n");

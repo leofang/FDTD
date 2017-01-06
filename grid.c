@@ -227,9 +227,10 @@ void sanity_check(grid * simulation)
     }
 
     //it is meaningless if one performs the computation without saving any result
-    if(!simulation->save_chi && !simulation->save_psi)
+    if(!simulation->save_chi && !simulation->save_psi && !simulation->save_psi_binary)
     {
-        fprintf(stderr, "%s: either save_chi or save_psi has to be 1. Abort!\n", __func__);
+        //fprintf(stderr, "%s: either save_chi or save_psi has to be 1. Abort!\n", __func__);
+        fprintf(stderr, "%s: need to specify the output options (available: save_chi, save_psi, save_psi_binary). Abort!\n", __func__);
         exit(EXIT_FAILURE);
     }
 
@@ -318,6 +319,8 @@ grid * initialize_grid(const char * filename)
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_chi")) : 0); //default: off
    FDTDsimulation->save_psi      = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi") ? \
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi")) : 0); //default: off
+   FDTDsimulation->save_psi_binary = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi_binary") ? \
+				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi_binary")) : 0); //default: off
    FDTDsimulation->init_cond     = (lookupValue(FDTDsimulation->parameters_key_value_pair, "init_cond") ? \
 	                           atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "init_cond")) : 0); //default: 0 (unspecified)
    FDTDsimulation->alpha         = (lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha") ? \
@@ -423,11 +426,42 @@ void save_psi(grid * simulation, const char * filename, double (*part)(complex))
 
     for(int j=0; j<simulation->Ny; j++)
     {
-        for(int i=0; i<simulation->Ntotal; i++)
+        for(int i=simulation->minus_a_index; i<simulation->Ntotal; i++)
         {
-            fprintf( f, "%.5f ", part(simulation->psi[j][i]) );
+            fprintf( f, "%.4g ", part(simulation->psi[j][i]) );
         }
+//        for(int i=0; i<simulation->Ntotal; i++)
+//        {
+//            fprintf( f, "%.5f ", part(simulation->psi[j][i]) );
+//        }
         fprintf( f, "\n");
+    }
+
+    fclose(f);
+    free(str);
+}
+
+
+//this function stores the computed wavefunction into a binary file
+//note that each data point is a complex number which takes 16 bytes!
+void save_psi_binary(grid * simulation, const char * filename)
+{
+    char * str = strdup(filename);
+    str = realloc(str, (strlen(filename)+10)*sizeof(char) );
+    strcat(str, ".bin");
+
+    FILE * f = fopen(str, "wb");
+    if(!f)
+    {
+        fprintf(stderr, "%s: file cannot be created!", __func__);
+        exit(EXIT_FAILURE);
+    }
+
+    size_t array_size = simulation->Ntotal - simulation->minus_a_index;
+
+    for(int j=0; j<simulation->Ny; j++)
+    {
+        fwrite(simulation->psi[j] + simulation->minus_a_index, sizeof(complex), array_size, f);
     }
 
     fclose(f);

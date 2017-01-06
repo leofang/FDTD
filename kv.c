@@ -139,19 +139,21 @@ void printKVs(kvarray_t * pairs) {
 
 
 char * lookupValue(kvarray_t * pairs, const char * key) {
-  const char * str1=NULL;
-  const char * str2=NULL;
+  //const char * str1=NULL;
+  //const char * str2=NULL;
   int key_index = 0;
   int found_key = 0;
 
   for(int i=0; i<pairs->kvpair_len; i++)
   {
-     str1 = strstr(pairs->kvpair[i]->key, key);
-     str2 = strstr(pairs->kvpair[i]->key+1, key);
-     if( str1 && !str2 )
+     if(strcmp(pairs->kvpair[i]->key, key)==0)
+     //str1 = strstr(pairs->kvpair[i]->key, key);
+     //str2 = strstr(pairs->kvpair[i]->key+1, key);
+     //if( str1 && !str2 )
      {
         key_index = i;
         found_key = 1;
+        break;
      }
   }
   
