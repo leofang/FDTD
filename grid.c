@@ -51,7 +51,7 @@ complex plane_wave_BC(int j, int i, grid * simulation)
     else
     {
        fprintf(stderr, "%s: NaN is produced (at j=%i and i=%i). Abort!\n", __func__, j, i);
-       abort();
+       exit(EXIT_FAILURE);
     }
 }
 
@@ -88,7 +88,7 @@ complex exponential_BC(int j, int i, grid * simulation)
     else
     {
        fprintf(stderr, "%s: NaN is produced (at j=%i and i=%i). Abort!\n", __func__, j, i);
-       abort();
+       exit(EXIT_FAILURE);
     }
 }
 
@@ -309,7 +309,7 @@ grid * initialize_grid(const char * filename)
    FDTDsimulation->Delta         = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "Delta"), NULL);
    FDTDsimulation->k             = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "k"), NULL);
    FDTDsimulation->w0            = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "w0"), NULL);
-   FDTDsimulation->Gamma         = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "Gamma"), NULL);
+   FDTDsimulation->Gamma         = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "gamma"), NULL);
    FDTDsimulation->Lx            = 2 * FDTDsimulation->Nx * FDTDsimulation->Delta;
    FDTDsimulation->Ly            = (FDTDsimulation->Ny-1) * FDTDsimulation->Delta;
    FDTDsimulation->plus_a_index  = FDTDsimulation->Nx + 3*FDTDsimulation->nx/2 + 1;
