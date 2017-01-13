@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "kv.h"
 
 
@@ -58,11 +59,26 @@ kvpair_t * create_kvpair(char * str)
    line_end--;
 
    //get key
-   kvpair->key = realloc(kvpair->key, (equal_sign1-str+1)*sizeof(char) );
-   strncpy(kvpair->key, str, equal_sign1-str);
-   kvpair->key[equal_sign1-str] = '\0';
+   //need to remove the leading and tailing whitespaces
+   char * key_end = equal_sign1-1;
+   while(isspace(*str)) str++;
+   while(isspace(*key_end)) key_end--;
+   if(key_end < str)
+   {
+      fprintf(stderr, "Key is empty. Abort!\n");
+      exit(EXIT_FAILURE);
+   }
+   kvpair->key = realloc(kvpair->key, (key_end-str+2)*sizeof(char) );
+   strncpy(kvpair->key, str, key_end-str+1);
+   kvpair->key[key_end-str+1] = '\0';
    
    //get value
+   //let stdlib utilities handle whitespaces
+   if(line_end < equal_sign1+1)
+   {
+      fprintf(stderr, "Value is empty. Abort!\n");
+      exit(EXIT_FAILURE);
+   }
    kvpair->value = realloc(kvpair->value, (line_end-equal_sign1+1)*sizeof(char) );
    strncpy(kvpair->value, equal_sign1+1, line_end-equal_sign1);
    kvpair->value[line_end-equal_sign1] = '\0';
