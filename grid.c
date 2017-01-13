@@ -38,7 +38,7 @@ complex plane_wave_BC(int j, int i, grid * simulation)
 	// based on my observation, the wavefunction should converge very fast, 
 	// so one can just cut the summation off if the precision is reached.
 	// this also helps prevent some overflow issue a bit.
-        if( cabs(temp) < DBL_EPSILON*cabs(sum) || isnan(temp) )
+        if( cabs(temp) < DBL_EPSILON*cabs(sum) || isnan(cabs(temp)) )
            break;
         else
 	   sum += temp;
@@ -46,7 +46,7 @@ complex plane_wave_BC(int j, int i, grid * simulation)
     e_t -= cexp(-0.5*I*k*td)*sum;
     e_t *= sqrt(2.)*cexp(I*k*(x-t)); // psi(x,t) = sqrt(2)e^{ik(x-t)}*e(t)
 
-    if(!isnan(e_t))
+    if(!isnan(cabs(e_t)))
        return e_t;
     else
     {
@@ -59,10 +59,10 @@ complex plane_wave_BC(int j, int i, grid * simulation)
 // This function returns the solution psi[j][i] in x<-a subject to single-photon exponential wavepacket //TODO
 complex exponential_BC(int j, int i, grid * simulation)
 {
-    double x = (i-simulation->origin_index)*simulation->Delta;
+//    double x = (i-simulation->origin_index)*simulation->Delta;
     double t = j*simulation->Delta;
     double td = simulation->nx*simulation->Delta;
-    double k = simulation->k;
+//    double k = simulation->k;
     double w0 = simulation->w0;
     double Gamma = simulation->Gamma;
     complex W = I*w0 + 0.5*Gamma;
@@ -75,7 +75,7 @@ complex exponential_BC(int j, int i, grid * simulation)
 	// based on my observation, the wavefunction should converge very fast, 
 	// so one can just cut the summation off if the precision is reached.
 	// this also helps prevent some overflow issue a bit.
-        if( cabs(temp) < DBL_EPSILON*cabs(sum) || isnan(temp) )
+        if( cabs(temp) < DBL_EPSILON*cabs(sum) || isnan(cabs(temp)) )
            break;
         else
 	   sum += temp;
@@ -83,7 +83,7 @@ complex exponential_BC(int j, int i, grid * simulation)
     complex e_t = cexp(-W*t)*(1.0+sum);
     e_t *= one_photon_exponential(i-j, simulation); // psi(x,t) = psi(x-t, 0) * e(t)
 
-    if(!isnan(e_t))
+    if(!isnan(cabs(e_t)))
        return e_t;
     else
     {
@@ -324,7 +324,9 @@ grid * initialize_grid(const char * filename)
    FDTDsimulation->init_cond     = (lookupValue(FDTDsimulation->parameters_key_value_pair, "init_cond") ? \
 	                           atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "init_cond")) : 0); //default: 0 (unspecified)
    FDTDsimulation->alpha         = (lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha") ? \
-	                           strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha"), NULL) : 0);    //default: 0
+	                           strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha"), NULL) : 0); //default: 0
+   FDTDsimulation->Tstep         = (lookupValue(FDTDsimulation->parameters_key_value_pair, "Tstep") ? \
+				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "Tstep")) : 0); //default: 0
 
    //check the validity of parameters
    sanity_check(FDTDsimulation);
@@ -424,7 +426,7 @@ void save_psi(grid * simulation, const char * filename, double (*part)(complex))
 
     FILE * f = fopen(str, "w");
 
-    for(int j=0; j<simulation->Ny; j++)
+    for(int j=0; j<simulation->Ny; j+=(simulation->Tstep+1))
     {
         for(int i=simulation->minus_a_index; i<simulation->Ntotal; i++)
         {
@@ -459,7 +461,7 @@ void save_psi_binary(grid * simulation, const char * filename)
 
     size_t array_size = simulation->Ntotal - simulation->minus_a_index;
 
-    for(int j=0; j<simulation->Ny; j++)
+    for(int j=0; j<simulation->Ny; j+=(simulation->Tstep+1))
     {
         fwrite(simulation->psi[j] + simulation->minus_a_index, sizeof(complex), array_size, f);
     }

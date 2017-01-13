@@ -62,7 +62,7 @@ complex incomplete_gamma(int n, complex x)
 
          if(cabs(temp) < cabs(sum)*DBL_EPSILON) //stop the sum when temp is significantly smaller than sum
          {
-            if(!isnan(prefactor*sum))
+            if(!isnan(cabs(prefactor*sum)))
                return prefactor*sum;
             else
 	       break;
@@ -97,7 +97,7 @@ complex incomplete_gamma(int n, complex x)
 	 frac *= del;             //frac_{i+1} = frac_i*C_{i+1}*D_{i+1}
 	 if(cabs(del-1.0) < DBL_EPSILON)
 	 {
-            if(!isnan(prefactor*frac))
+            if(!isnan(cabs(prefactor*frac)))
                return 1.0-prefactor*frac;
             else
 	       break;
