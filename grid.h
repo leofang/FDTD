@@ -83,7 +83,8 @@ struct _grid
    int save_chi;         //whether or not to save the two-photon wavefunction to file (default: no)
    int save_psi;         //whether or not to save the wavefunction to file (default: no)
    int save_psi_binary;  //whether or not to save the wavefunction to binary file (default: no)
-   int init_cond;       //the initial condition of the wavefunction (default: unspecified)
+   int init_cond;        //the initial condition of the wavefunction (default: unspecified)
+   size_t Tstep;         //for output of save_psi: save psi for every (Tstep+1) temporal steps
 
    //input parameters (stored for convenience)
    kvarray_t * parameters_key_value_pair;
