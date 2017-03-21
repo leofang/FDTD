@@ -20,18 +20,20 @@ from math import ceil
 ######### Simulation Parameters ########
 # grid size
 Delta = pi/12500.
-# number of grids in-between the qubit and its mirror image (nx = 2a/Delta)
-nx = 3500
+# the ratio of grid size to wavelength (Delta/lambda)
+dx = 1.0/200.0
 # half of number of (qubit) wavelength in x direction
-Nx = 180
+Nx = 160
 # number of (qubit) wavelength in t direction
-Ny = 180
+Ny = 160
 # save the result of psi (solution of delay PDE)?
 save_psi = 1
 # save the result of chi (two-photon wavefunction)?
 save_chi = 0
 # save psi for every Tstep+1 temporal steps
-Tstep = 49
+Tstep = 29
+# whether or not save e0(t) and e1(t)
+measure_NM = 1
 
 ########## Physics Paramters ###########
 # initial condition (1: two-photon plane wave; 2: one-photon exponential wavepacket)
@@ -41,11 +43,12 @@ k0 = 20.0
 # incident frequency (in Gamma)
 k = 20.0
 # k0 a = n pi
-n = 14.0
+n = 6.0
 
 ########## condor configuration ###########
 OnlyUseNanoMachines = False
 RunOnOSG = False
+NumCPU = 1
 
 ########################################
 #     Do Not Touch the Code Below!     #
@@ -109,6 +112,8 @@ for alpha in 10.**(numpy.array(range(-31, 12))/10.):
    #      sys.exit("No filename is given! Abort!")
    #   else:
    #      sys.exit("Too many arguments. Abort!")
+   
+   nx = int(n / dx)
 
    time_object = datetime.date.today()
    filename = time_object.strftime("%Y%b%d") + "_n_%.2f_alpha_%.4f_k_%.2f" %(n, alpha, k)
@@ -144,6 +149,7 @@ for alpha in 10.**(numpy.array(range(-31, 12))/10.):
    f2.write("gamma=%.10f\n"%Gamma)
    f2.write("save_chi=%i\n"%save_chi)
    f2.write("save_psi=%i\n"%save_psi)
+   f2.write("measure_NM=%i\n"%measure_NM)
    f2.write("init_cond=%i\n"%init_cond)
    f2.write("alpha=%f\n"%alpha)
    f2.write("Tstep=%i\n"%Tstep)
@@ -154,7 +160,8 @@ for alpha in 10.**(numpy.array(range(-31, 12))/10.):
    f.write("output = condor_log/" + "$(Cluster).$(Process).out\n")
    f.write("error  = condor_log/" + "$(Cluster).$(Process).err\n")
    f.write("Log    = condor_log/" + "$(Cluster).$(Process).log\n")
-   f.write("request_memory = %.fGB\n"%(2*Nx_in*Ny_in*16./1E+9))
+   f.write("request_cpus = %i\n" % NumCPU)
+   f.write("request_memory = %.fGB\n" %(2*Nx_in*Ny_in*16./1E+9) )
    #if (RunOnOSG if "RunOnOSG" in locals() else False): # run on OSG nodes
    #    f.write("transfer_input_files = " + parms['BASENAME'] + ".in.h5")
    #    for i in range(N_ENV if "N_ENV" in locals() else 1):

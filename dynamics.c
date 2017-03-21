@@ -12,7 +12,7 @@
 
 // this function computes the average of 4 points that form a square
 // j and i are the array indices psi[j][i] of the upper right corner
-complex square_average(int j, int i, grid * simulation)
+double complex square_average(int j, int i, grid * simulation)
 {
    if(i<1) //beyond the boundary x=-(Nx+nx+1)*Delta
    {
@@ -29,7 +29,7 @@ complex square_average(int j, int i, grid * simulation)
    if(j<1) //everything is zero below t=0
       return 0;
 
-   complex square = 0;
+   double complex square = 0;
 
    for(int m=j-1; m<=j; m++)
    {
@@ -44,7 +44,7 @@ complex square_average(int j, int i, grid * simulation)
 
 // this function computes the average of 2 points that form a bar
 // j and i are the array indices psi[j][i] of the right end
-complex bar_average(int j, int i, grid * simulation)
+double complex bar_average(int j, int i, grid * simulation)
 {
    if(i<1) //beyond the boundary x=-(Nx+nx+1)*Delta
    {
@@ -66,7 +66,7 @@ complex bar_average(int j, int i, grid * simulation)
 
 
 //this function computes chi(x1, x2, 0)
-complex two_photon_input(int i1, int i2, grid * simulation)
+double complex two_photon_input(int i1, int i2, grid * simulation)
 {
    //TODO: make a flexible choice for different inputs
 
@@ -79,7 +79,7 @@ complex two_photon_input(int i1, int i2, grid * simulation)
 
 
 // this function computes the exponential wavepacket with a sharp wavefront at x=-a
-complex one_photon_exponential(int i, grid * simulation)
+double complex one_photon_exponential(int i, grid * simulation)
 {
    if(i>simulation->minus_a_index)
       return 0;

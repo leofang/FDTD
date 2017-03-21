@@ -14,9 +14,11 @@
 #include "special_function.h"
 #include "dynamics.h"
 #include <string.h>
+#include "NM_measure.h"
+
 
 // This function returns the solution psi[j][i] in x<-a subject to incident plane wave
-complex plane_wave_BC(int j, int i, grid * simulation)
+double complex plane_wave_BC(int j, int i, grid * simulation)
 {
     double x = (i-simulation->origin_index)*simulation->Delta; //check!!!
     double t = j*simulation->Delta;
@@ -24,14 +26,14 @@ complex plane_wave_BC(int j, int i, grid * simulation)
     double k = simulation->k;
     double w0 = simulation->w0;
     double Gamma = simulation->Gamma;
-    complex p = k - w0 + 0.5*I*Gamma;
+    double complex p = k - w0 + 0.5*I*Gamma;
 
-    complex e_t = I*sqrt(0.5*Gamma)*cexp(-0.5*I*k*td)*(cexp(-I*k*t)-cexp(-I*w0*t-0.5*Gamma*t))/p;
-    complex sum = 0;
+    double complex e_t = I*sqrt(0.5*Gamma)*cexp(-0.5*I*k*td)*(cexp(-I*k*t)-cexp(-I*w0*t-0.5*Gamma*t))/p;
+    double complex sum = 0;
 
     for(int n=1; n<=(j/simulation->nx); n++)
     {
-        complex temp = cpow(0.5*Gamma, n-0.5) * \
+        double complex temp = cpow(0.5*Gamma, n-0.5) * \
                        ( cexp( n*log(t-n*td) + n*(I*w0*td+0.5*Gamma*td)-I*w0*t-0.5*Gamma*t-lgamma(n+1) ) \
                        + (k-w0)*incomplete_gamma(n+1, -I*p*(t-n*td))*cexp( n*clog(I)+I*n*k*td-I*k*t-(n+1)*clog(p) ) );
 
@@ -56,39 +58,75 @@ complex plane_wave_BC(int j, int i, grid * simulation)
 }
 
 
-// This function returns the solution psi[j][i] in x<-a subject to single-photon exponential wavepacket //TODO
-complex exponential_BC(int j, int i, grid * simulation)
+// This function returns the solution psi[j][i] in x<-a subject to single-photon exponential wavepacket 
+double complex exponential_BC(int j, int i, grid * simulation)
 {
-//    double x = (i-simulation->origin_index)*simulation->Delta;
-    double t = j*simulation->Delta;
-    double td = simulation->nx*simulation->Delta;
-//    double k = simulation->k;
-    double w0 = simulation->w0;
-    double Gamma = simulation->Gamma;
-    complex W = I*w0 + 0.5*Gamma;
+   return simulation->e1[j] * one_photon_exponential(i-j, simulation); // psi(x,t) = psi(x-t, 0) * e(t)
+}
 
-    complex sum = 0;
-    for(int n=1; n<=(j/simulation->nx); n++)
+
+//TODO: this should be generalized to acommadate different I.C.
+void prepare_qubit_wavefunction(grid * simulation)
+{
+    //do this only if the exponential wavepacket is used
+    if(simulation->init_cond == 2)
     {
-        complex temp = exp(-lgamma(n+1)) * cpow(0.5*Gamma*cexp(W*td)*(t-n*td), n);
-
-	// based on my observation, the wavefunction should converge very fast, 
-	// so one can just cut the summation off if the precision is reached.
-	// this also helps prevent some overflow issue a bit.
-        if( cabs(temp) < DBL_EPSILON*cabs(sum) || isnan(cabs(temp)) )
-           break;
-        else
-	   sum += temp;
+        initialize_e0(simulation);
+        initialize_e1(simulation);
     }
-    complex e_t = cexp(-W*t)*(1.0+sum);
-    e_t *= one_photon_exponential(i-j, simulation); // psi(x,t) = psi(x-t, 0) * e(t)
+}
 
-    if(!isnan(cabs(e_t)))
-       return e_t;
-    else
+
+void initialize_e0(grid * simulation)
+{
+    simulation->e0 = calloc(simulation->Ny, sizeof(*simulation->e0));
+    if(!simulation->e0)
+    { 
+        fprintf(stderr, "%s: cannot allocate memory. Abort!\n", __func__);
+        exit(EXIT_FAILURE);
+    }
+
+    int progress = 0;
+    //for nonzero initial conditions
+    if(simulation->init_cond == 2) //single-photon exponential wavepacket
     {
-       fprintf(stderr, "%s: NaN is produced (at j=%i and i=%i). Abort!\n", __func__, j, i);
-       exit(EXIT_FAILURE);
+        for(int j=0; j<simulation->Ny; j++)
+        {
+            simulation->e0[j] = e0(j, simulation);
+
+            if(j%(simulation->Ny/10)==0)
+            {
+                printf("%s: %i%% prepared...\r", __func__, progress*10); fflush(stdout);
+                progress++;
+            }
+        }
+    }
+    //TODO: add other I.C. here
+
+    //wash out the status report
+    //printf("                                                                           \r"); fflush(stdout);
+}
+
+
+void initialize_e1(grid * simulation)
+{
+    simulation->e1 = calloc(simulation->Ny, sizeof(*simulation->e1));
+    if(!simulation->e1)
+    { 
+        fprintf(stderr, "%s: cannot allocate memory. Abort!\n", __func__);
+        exit(EXIT_FAILURE);
+    }
+
+    int progress = 0;
+    for(int j=0; j<simulation->Ny; j++)
+    {
+        simulation->e1[j] = e1(j, simulation);
+
+        if(j%(simulation->Ny/10)==0)
+        {
+            printf("%s: %i%% prepared...\r", __func__, progress*10); fflush(stdout);
+            progress++;
+        }
     }
 }
 
@@ -279,11 +317,20 @@ void free_grid(grid * simulation)
     freeKVs(simulation->parameters_key_value_pair);
 
     //free psit0 and psix0
-    free_initial_boundary_conditions(simulation);
+    //free_initial_boundary_conditions(simulation);
 
+    //free psi
     for(int j=0; j<simulation->Ny; j++)
        free(simulation->psi[j]);
     free(simulation->psi);
+
+    //free e0 & e1 
+    //TODO: take care of this part if the code grows!
+    if(simulation->init_cond == 2)
+    {
+       free(simulation->e0);
+       free(simulation->e1);
+    }
 
     free(simulation);
 }
@@ -327,17 +374,20 @@ grid * initialize_grid(const char * filename)
 	                           strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha"), NULL) : 0); //default: 0
    FDTDsimulation->Tstep         = (lookupValue(FDTDsimulation->parameters_key_value_pair, "Tstep") ? \
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "Tstep")) : 0); //default: 0
+   FDTDsimulation->measure_NM    = (lookupValue(FDTDsimulation->parameters_key_value_pair, "measure_NM") ? \
+	                           atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "measure_NM")) : 0); //default: off
 
    //check the validity of parameters
    sanity_check(FDTDsimulation);
 
    //initialize arrays
+   prepare_qubit_wavefunction(FDTDsimulation);
    initial_condition(FDTDsimulation);
    boundary_condition(FDTDsimulation);
    initialize_psi(FDTDsimulation);
 
-//   //save memory
-//   free_initial_boundary_conditions(FDTDsimulation);
+   //save memory
+   free_initial_boundary_conditions(FDTDsimulation);
 
    return FDTDsimulation;
 }
@@ -406,8 +456,8 @@ void print_psi(grid * simulation)
 
 //this function stores the computed wavefunction into a file;
 //the third argument "part" can be any function converting a 
-//complex to a double, e.g., creal, cimag, cabs, etc. 
-void save_psi(grid * simulation, const char * filename, double (*part)(complex))
+//double complex to a double, e.g., creal, cimag, cabs, etc. 
+void save_psi(grid * simulation, const char * filename, double (*part)(double complex))
 {
     char * str = strdup(filename);
     str = realloc(str, (strlen(filename)+10)*sizeof(char) );
@@ -463,7 +513,7 @@ void save_psi_binary(grid * simulation, const char * filename)
 
     for(int j=0; j<simulation->Ny; j+=(simulation->Tstep+1))
     {
-        fwrite(simulation->psi[j] + simulation->minus_a_index, sizeof(complex), array_size, f);
+        fwrite(simulation->psi[j] + simulation->minus_a_index, sizeof(double complex), array_size, f);
     }
 
     fclose(f);
@@ -475,7 +525,7 @@ void save_psi_binary(grid * simulation, const char * filename)
 //then writes to a file, so no extra memory is allocated;
 //the third argument "part" can be any function converting a
 //complex to a double, e.g., creal, cimag, cabs, etc.
-void save_chi(grid * simulation, const char * filename, double (*part)(complex))
+void save_chi(grid * simulation, const char * filename, double (*part)(double complex))
 {
     char * str = strdup(filename);
     str = realloc(str, (strlen(filename)+15)*sizeof(char) );
@@ -498,7 +548,7 @@ void save_chi(grid * simulation, const char * filename, double (*part)(complex))
     //to make all terms in chi well-defined requires 0 <= i <= Nx-nx/2.
     //Similarly, j must >= simulation->minus_a_index in order to let signal from the 1st qubit reach the boundary;
     //put it differently, one cannot take data before the first light cone intersects with the boundary x=Nx*Delta.
-    complex chi = 0;
+    double complex chi = 0;
     for(int j=(simulation->Nx+simulation->nx/2+1); j<=simulation->Ny; j++)
     {
         for(int i=0; i<=simulation->Nx-simulation->nx/2; i++)

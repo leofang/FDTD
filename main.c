@@ -12,6 +12,7 @@
 #include "grid.h"
 #include "kv.h"
 #include "dynamics.h"
+#include "NM_measure.h"
 
 
 int main(int argc, char **argv)
@@ -34,7 +35,7 @@ int main(int argc, char **argv)
    printf("FDTD: simulation starts...\n");// fflush(stdout);
 
    // W = (i*w0+Gamma/2)
-   complex W = simulation->w0*I+0.5*simulation->Gamma;
+   double complex W = simulation->w0*I+0.5*simulation->Gamma;
 
    //simulation starts
    for(int j=1; j<simulation->Ny; j++) //start from t=1*Delta
@@ -127,6 +128,14 @@ int main(int argc, char **argv)
       save_psi_binary(simulation, argv[1]);
    if(simulation->save_chi)
       save_chi(simulation, argv[1], cabs);
+   if(simulation->measure_NM)
+   {
+      save_e0(simulation, argv[1], creal);
+      save_e0(simulation, argv[1], cimag);
+      save_e1(simulation, argv[1], creal);
+      save_e1(simulation, argv[1], cimag);
+   }
+
    //printf("Done!\n");
 
    free_grid(simulation);

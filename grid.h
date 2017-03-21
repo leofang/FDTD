@@ -68,9 +68,11 @@ struct _grid
    double alpha; // exponential tail   (dimensionless)
 
    //actual info on dynamics
-   complex * psit0;  //initial condition psi(x,0) (stored as psi0[x])
-   complex ** psi;   //wavefunction psi(x,t) to be computed (stored as psi[t][x])
-   complex ** psix0; //boundary condition psi(-L,0) (stored as psix0[t][x])
+   double complex * psit0;  //initial condition psi(x,0) (stored as psi0[x])
+   double complex ** psi;   //wavefunction psi(x,t) to be computed (stored as psi[t][x])
+   double complex ** psix0; //boundary condition psi(-L,0) (stored as psix0[t][x])
+   double complex * e0;     //qubit wavefunction for I.C. e(0)=0 and an exponential wavepacket
+   double complex * e1;     //qubit wavefunction for I.C. e(0)=1 and no incident wavepacket
    
    //auxiliary parameters
    int psit0_size;   //array size of psit0 
@@ -85,6 +87,7 @@ struct _grid
    int save_psi_binary;  //whether or not to save the wavefunction to binary file (default: no)
    int init_cond;        //the initial condition of the wavefunction (default: unspecified)
    size_t Tstep;         //for output of save_psi: save psi for every (Tstep+1) temporal steps
+   int measure_NM;       //currently it means whether to save e0 and e1 or not //TODO: extend this part
 
    //input parameters (stored for convenience)
    kvarray_t * parameters_key_value_pair;
@@ -103,10 +106,11 @@ void print_initial_condition(grid * simulation);
 void print_boundary_condition(grid * simulation);
 void print_grid(grid * simulation);
 void print_psi(grid * simulation);
-void save_psi(grid * simulation, const char * filename, double (*part)(complex));
+void save_psi(grid * simulation, const char * filename, double (*part)(double complex));
 void save_psi_binary(grid * simulation, const char * filename);
-void save_chi(grid * simulation, const char * filename, double (*part)(complex));
-
-
+void save_chi(grid * simulation, const char * filename, double (*part)(double complex));
+void prepare_qubit_wavefunction(grid * simulation);
+void initialize_e0(grid * simulation);
+void initialize_e1(grid * simulation);
 
 #endif

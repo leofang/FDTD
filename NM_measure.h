@@ -8,16 +8,14 @@
  * http://www.wtfpl.net/ for more details.
  */
 
-#ifndef __SPECIAL_FUNCTION_H__
-#define __SPECIAL_FUNCTION_H__
+#ifndef __NM_MEASURE_H__
+#define __NM_MEASURE_H__
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <tgmath.h>
-//#include <complex.h>
-//#include <math.h>
-#include <float.h> //for DBL_EPSILON ~ 2.2E-16
+#include "grid.h"
 
-double complex incomplete_gamma(int n, double complex x);
+double complex e0(int j, grid * simulation);
+double complex e1(int j, grid * simulation);
+void save_e0(grid * simulation, const char * filename, double (*part)(double complex));
+void save_e1(grid * simulation, const char * filename, double (*part)(double complex));
 
 #endif

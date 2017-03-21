@@ -16,9 +16,9 @@
 
 //a collection of convenient functions
 
-complex square_average(int j, int i, grid * simulation);
-complex bar_average(int j, int i, grid * simulation);
-complex two_photon_input(int i1, int i2, grid * simulation);
-complex one_photon_exponential(int i, grid * simulation);
+double complex square_average(int j, int i, grid * simulation);
+double complex bar_average(int j, int i, grid * simulation);
+double complex two_photon_input(int i1, int i2, grid * simulation);
+double complex one_photon_exponential(int i, grid * simulation);
 
 #endif
