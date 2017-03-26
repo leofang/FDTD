@@ -31,5 +31,5 @@ dynamics.o: dynamics.h grid.h kv.h
 grid.o: kv.h grid.h special_function.h dynamics.h NM_measure.h
 kv.o: kv.h
 main.o: grid.h kv.h dynamics.h NM_measure.h
-NM_measure.o: NM_measure.h grid.h kv.h special_function.h
+NM_measure.o: NM_measure.h grid.h kv.h special_function.h dynamics.h
 special_function.o: special_function.h

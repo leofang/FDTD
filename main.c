@@ -130,6 +130,8 @@ int main(int argc, char **argv)
       save_chi(simulation, argv[1], cabs);
    if(simulation->measure_NM)
    {
+      printf("FDTD: calculating lambda and mu for NM measures...\n"); fflush(stdout);
+      calculate_NM_measure(simulation, argv[1]);
       save_e0(simulation, argv[1], creal);
       save_e0(simulation, argv[1], cimag);
       save_e1(simulation, argv[1], creal);

@@ -73,6 +73,8 @@ struct _grid
    double complex ** psix0; //boundary condition psi(-L,0) (stored as psix0[t][x])
    double complex * e0;     //qubit wavefunction for I.C. e(0)=0 and an exponential wavepacket
    double complex * e1;     //qubit wavefunction for I.C. e(0)=1 and no incident wavepacket
+   double complex * mu;     //mu(t) for calculating NM measures
+   double * lambda;         //lambda(t) for calculating NM measures
    
    //auxiliary parameters
    int psit0_size;   //array size of psit0 

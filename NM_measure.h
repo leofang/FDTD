@@ -15,7 +15,13 @@
 
 double complex e0(int j, grid * simulation);
 double complex e1(int j, grid * simulation);
+double complex phi(int j, int i, grid * simulation);
+double lambda(int j, grid * simulation);
+double complex mu(int j, grid * simulation);
 void save_e0(grid * simulation, const char * filename, double (*part)(double complex));
 void save_e1(grid * simulation, const char * filename, double (*part)(double complex));
+void save_mu(grid * simulation, const char * filename, double (*part)(double complex));
+void save_lambda(grid * simulation, const char * filename);
+void calculate_NM_measure(grid * simulation, const char * filename);
 
 #endif

@@ -265,10 +265,11 @@ void sanity_check(grid * simulation)
     }
 
     //it is meaningless if one performs the computation without saving any result
-    if(!simulation->save_chi && !simulation->save_psi && !simulation->save_psi_binary)
+    if(!simulation->save_chi && !simulation->save_psi && !simulation->save_psi_binary && !simulation->measure_NM)
     {
         //fprintf(stderr, "%s: either save_chi or save_psi has to be 1. Abort!\n", __func__);
-        fprintf(stderr, "%s: need to specify the output options (available: save_chi, save_psi, save_psi_binary). Abort!\n", __func__);
+        fprintf(stderr, "%s: need to specify the output options (available: save_chi, save_psi, save_psi_binary, measure_NM). \
+                        Abort!\n", __func__);
         exit(EXIT_FAILURE);
     }
 
@@ -291,6 +292,13 @@ void sanity_check(grid * simulation)
     else if(simulation->init_cond == 2 && !lookupValue(simulation->parameters_key_value_pair, "alpha"))
     {//want to use exponential wavepacket but forget to set alpha's value
         fprintf(stderr, "%s: alpha is not given. Abort!\n", __func__);
+        exit(EXIT_FAILURE);
+    }
+
+    //currently calculate_NM_measure only supports single-photon exponentail wavepacket
+    if(simulation->measure_NM && simulation->init_cond!=2)
+    {
+        fprintf(stderr, "%s: to calculate lambda and mu for NM measures, set init_cond=2. Abort!\n", __func__);
         exit(EXIT_FAILURE);
     }
 }
