@@ -280,6 +280,11 @@ void calculate_NM_measure(grid * simulation, const char * filename)
     //their memory is not allocated until this function is called
     simulation->lambda = calloc(Tmax, sizeof(*simulation->lambda));
     simulation->mu     = calloc(Tmax, sizeof(*simulation->mu));
+    if(!simulation->lambda || !simulation->mu)
+    {
+       fprintf(stderr, "%s: memory allocation failed. Abort!\n", __func__);
+       exit(EXIT_FAILURE);
+    }
 
     for(int j=0; j<Tmax; j++)
     {
