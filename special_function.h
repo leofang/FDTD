@@ -19,5 +19,6 @@
 #include <float.h> //for DBL_EPSILON ~ 2.2E-16
 
 double complex incomplete_gamma(int n, double complex x);
+double Pochhammer(double a, int n);
 
 #endif
