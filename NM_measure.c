@@ -34,7 +34,7 @@ double complex e0(int j, grid * simulation)
     for(int n=1; n<=(j/simulation->nx); n++)
     {
         double complex temp = ( cexp( n*log(t-n*td) - W*(t-n*td) - lgamma(n+1) ) \
-                       - (I*K+w0) * incomplete_gamma(n+1, -I*p*(t-n*td)) * cexp( n*clog(I) - (n+1)*clog(p) - K*(t-n*td) ) );
+                       - (I*K+w0) * incomplete_gamma_e(n+1, -I*p*(t-n*td), n*clog(I) - (n+1)*clog(p) - K*(t-n*td) ) );
 
         temp *= pow(0.5*Gamma, n-0.5);
 
