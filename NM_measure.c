@@ -140,8 +140,12 @@ double lambda(int j, grid * simulation)
    Lambda *= pow(cabs(simulation->e1[j]), 2.0);
    Lambda -= pow(cabs(simulation->e0[j]), 2.0);
 
-   for(int i = simulation->minus_a_index; i<simulation->Ntotal; i++)
+   int xmax = j + simulation->plus_a_index;
+   //trapezoidal rule
+   sum += 0.5 * pow(cabs(simulation->psi[j][simulation->minus_a_index]), 2.0);
+   for(int i = simulation->minus_a_index+1; i<xmax; i++)
       sum += pow(cabs(simulation->psi[j][i]), 2.0);
+   sum += 0.5 * pow(cabs(simulation->psi[j][xmax]), 2.0);
    
    Lambda += simulation->Delta * sum;
 
@@ -164,8 +168,12 @@ double complex mu(int j, grid * simulation)
    double complex Mu = exp(- simulation->alpha * simulation->Gamma * j * simulation->Delta) * simulation->e1[j];
    double complex sum = 0;
 
-   for(int i = simulation->minus_a_index; i<simulation->Ntotal; i++)
+   int xmax = j + simulation->plus_a_index;
+   //trapezoidal rule
+   sum += 0.5 * conj( phi(j, simulation->minus_a_index, simulation) ) * simulation->psi[j][simulation->minus_a_index];
+   for(int i = simulation->minus_a_index+1; i<xmax; i++)
       sum += conj( phi(j, i, simulation) ) * simulation->psi[j][i];
+   sum += 0.5 * conj( phi(j, xmax, simulation) ) * simulation->psi[j][xmax];
  
    Mu += simulation->Delta * sum;
 
