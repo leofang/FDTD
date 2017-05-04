@@ -42,7 +42,7 @@ double complex incomplete_gamma(int n, double complex x)
    if(x==0)
       return 0;
 
-   if(fabs(cimag(x))<DBL_EPSILON) 
+   if(fabs(cimag(x))<DBL_EPSILON && creal(x)<0) 
    {//real negative argument
       if(creal(x)<-50)
       {
@@ -66,7 +66,7 @@ double complex incomplete_gamma(int n, double complex x)
             }
          }
       }
-      else
+      else // -50 <= x < 0
       {
 //         printf("Series expansion for gamma* used...\n");
          x = -x; //make x>0
@@ -189,7 +189,7 @@ double complex incomplete_gamma_e(int n, double complex x, double complex y)
    if(x==0)
       return 0;
 
-   if(fabs(cimag(x))<DBL_EPSILON) 
+   if(fabs(cimag(x))<DBL_EPSILON && creal(x)<0) 
    {//real negative argument
       if(creal(x)<-50)
       {
@@ -213,7 +213,7 @@ double complex incomplete_gamma_e(int n, double complex x, double complex y)
             }
          }
       }
-      else
+      else // -50 <= x < 0
       {
 //         printf("Series expansion for gamma* used...\n");
          x = -x; //make x>0
