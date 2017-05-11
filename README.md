@@ -1,45 +1,52 @@
-# FDTD: solving 1+1D delay PDE
-This code is intended to solve 1+1D delay PDE which emerges in waveguide QED problems.
+# FDTD: solving 1+1D delayed PDE
+This code is intended to solve 1+1D complex-valued, delayed PDE which emerges in waveguide-QED problems: ![](https://latex.codecogs.com/gif.latex?\inline&space;\begin{align}&space;\frac{d}{dt}\psi(x,t)&=-\frac{d}{dx}\psi(x,t)-\left(i\omega_0&plus;\frac{\Gamma}{2}\right)\psi(x,t)&plus;\frac{\Gamma}{2}\psi(x-2a,&space;t-2a)\theta(t-2a)\nonumber\\&space;&\quad-\frac{\Gamma}{2}\biggl[\bigl(\psi(-x-2a,&space;t-x-a)-\psi(-x,&space;t-x-a)\bigr)\theta(x&plus;a)\theta(t-x-a)\nonumber\\&space;&\quad\quad&plus;\bigl(\psi(2a-x,&space;t-x&plus;a)-\psi(-x,&space;t-x&plus;a)\bigr)\theta(x-a)\theta(t-x&plus;a)\biggr]\nonumber\\&space;&\quad&plus;\sqrt{\frac{\Gamma}{4}}\biggl[\chi(x-t,-a-t,0)&plus;\chi(-a-t,x-t,0)-\chi(x-t,a-t,0)-\chi(a-t,x-t,0)\biggr]\nonumber&space;\end{align})
 
 ## Requirements
-None. This code is written in pure C and conforming the gnu99 standard, so it can be compiled on any modern OS with standard C libraries.
+None. This code is written in pure C and conforming the gnu99 standard, so it can be compiled on any modern OS with C compilers that conform C99. Tested with gcc on Linux and clang on Mac. Depending on the grid size, however, the code can be highly memory- and storage-demanding; see below.
 
 ## Features
 * Fast and efficient
 * Valgrind-clean (no memory leak)
-* Proof of concept for numerically solving a PDE which has delay in both dimensions
+* Proof of concept for numerically solving a PDE with delay in both dimensions using FDTD
 
 ## Installation
 A makefile is provided. After cloning the git repo or downloading the source code, simply type `make` in the same folder to compile, and an executable named `FDTD` will be generated.
 
 ## Usage
-`./FDTD input_filename`, where `input_filename` is the name of the input file.
+`./FDTD input_filename`, where `input_filename` is the name of the input file that specifies the input parameters, each in one line (see below).
 
-## Mandatory input parameters
-Only 7 are required: `nx`, `Nx`, `Ny`, `Delta`, `k`, `w0`, and `Gamma`. The first four are simulation-related, and the rest are physics-related. The format of the input file should be one key-value pair per line, with a equal sign separating the key and the value (see the sample file `k0a_0.5pi_on_new`):
+## Input parameters
+At least 8 are required: `nx`, `Nx`, `Ny`, `Delta`, `init_cond`, `k`, `w0`, and `Gamma`. The first five are simulation-related, and the rest are physics-related. The format of the input file should be one key-value pair per line, with a equal sign separating the key and the value (see the sample file `k0a_0.5pi_on_new`):
 ```bash
 nx=200
 Nx=10000
 Ny=20000
 Delta=0.0100000000
+init_cond=1
 k=1.5707963268
 w0=1.5707963268
 Gamma=0.0785398163
 save_psi=0
 save_chi=1
 ```
-For futher details (e.g., the layout of the grid, decriptions for various parameters, etc) see the comments in `grid.h`. A Python script is provided in the `utilities` folder for the ease of preparing input.
+For futher details (e.g., the layout of the grid, decriptions for various parameters, etc) see the comments in `grid.h` as well as the documentation. A Python script is provided in the `utilities` folder for the ease of preparing input.
 
-Options controlling the behavior of the program can also be given; if not given, the program assumes a default value. Currently there exists two options (see the above example): `save_psi` (default=0) and `save_chi` (default=0).
+Currently two kinds of initial conditions are built in: two-photon plane wave (set `init_cond=1`) and single-photon exponential wavepacket (`init_cond=2`). For the latter, the (dimensionless) wavepacket width `alpha` needs to be specified. Other kinds of initial conditions can be incorperated into the code easily.
 
-For the moment, only one kind of initial condition (two-photon plane wave) is built in. Other forms are planned to be included in the future.
+For the ease of post-processing data, several functions for constructing various non-Markovian measures can be calculated on the fly if `measure_NM=1` is set. For detail see the documentation. Note that currently in this situation only the single-photon exponential wavepacket is supported (so remember to set `init_cond=2` and `alpha`).
+
+Other options controlling the behavior of the program can also be given; if not given, the program assumes a default value. Currently all available options are `save_psi` (default=0), `save_psi_binary` (default=0), `save_chi` (default=0), `init_cond` (default=0: invalid), `Tstep` (default=0), and `measure_NM` (default=0).
+
+**WARNING**: depending on the grid size, the memory usage and the output files can be excessively huge. For the former, a quick estimation is 2*16*Nx*Ny/1024^3 (in GB); for the latter, setting `Tstep=30` or larger (write the wavefunction for every Tstep+1 temporal steps) can help reduce significantly the file size.
 
 ## Output
 Depending on the options, the following files will be generated: 
 * `save_psi`: `input_filename.re.out` and `input_filename.im.out` (real and imaginary parts, respectively, of the wavefunction described by the delay PDE). 
+* `save_psi_binary`: `input_filename.bin` (the entire wavefunction, complex numbers, written in a binary file).
 * `save_chi`: `input_filename.abs_chi.out` (absolute value of the two-photon wavefunction).
+* `measure_NM`: `input_filename.re_e0.out`, `input_filename.re_e1.out`, `input_filename.re_mu.out`, their imaginary counterparts, and `input_filename.lambda.out`; see the documentation for their meanings.
 
-Note that these two options cannot be simultaneously turned off, or the program would generate nothing.
+Note that these options cannot be simultaneously turned off, or the program would generate nothing.
 
 A Mathematica notebook is provided in the `utilities` folder for simple plotting purposes.
 
