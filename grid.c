@@ -23,19 +23,21 @@ double complex plane_wave_BC(int j, int i, grid * simulation)
     double x = (i-simulation->origin_index)*simulation->Delta; //check!!!
     double t = j*simulation->Delta;
     double td = simulation->nx*simulation->Delta;
-    double k = simulation->k;
     double w0 = simulation->w0;
     double Gamma = simulation->Gamma;
-    double complex p = k - w0 + 0.5*I*Gamma;
+    double complex K = I*simulation->k;
+    double complex W = I*w0 + 0.5*Gamma;
+    double complex p = -I*(K - W);
 
-    double complex e_t = I*sqrt(0.5*Gamma)*cexp(-0.5*I*k*td)*(cexp(-I*k*t)-cexp(-I*w0*t-0.5*Gamma*t))/p;
+    double complex e_t = I*sqrt(0.5*Gamma)*(cexp(-K*t)-cexp(-W*t))/p;
     double complex sum = 0;
 
     for(int n=1; n<=(j/simulation->nx); n++)
     {
-        double complex temp = cpow(0.5*Gamma, n-0.5) * \
-                       ( cexp( n*log(t-n*td) + n*(I*w0*td+0.5*Gamma*td)-I*w0*t-0.5*Gamma*t-lgamma(n+1) ) \
-                       + (k-w0)*incomplete_gamma(n+1, -I*p*(t-n*td))*cexp( n*clog(I)+I*n*k*td-I*k*t-(n+1)*clog(p) ) );
+        double complex temp = ( cexp( n*log(t-n*td) - W*(t-n*td) - lgamma(n+1) ) \
+                       - (I*K+w0) * incomplete_gamma_e(n+1, -I*p*(t-n*td), n*clog(I) - (n+1)*clog(p) - K*(t-n*td) ) );
+
+        temp *= cpow(0.5*Gamma, n-0.5);
 
 	// based on my observation, the wavefunction should converge very fast, 
 	// so one can just cut the summation off if the precision is reached.
@@ -45,8 +47,9 @@ double complex plane_wave_BC(int j, int i, grid * simulation)
         else
 	   sum += temp;
     }
-    e_t -= cexp(-0.5*I*k*td)*sum;
-    e_t *= sqrt(2.)*cexp(I*k*(x-t)); // psi(x,t) = sqrt(2)e^{ik(x-t)}*e(t)
+    e_t -= sum;    
+    e_t *= sqrt(2.)*cexp(K*(x-t)); // psi(x,t) = sqrt(2)e^{ik(x-t)}*e(t)
+    e_t *= cexp(-0.5*K*td);        //TODO: this phase factor can be eliminated by absorbing into the wavepacket
 
     if(!isnan(cabs(e_t)))
        return e_t;
@@ -557,7 +560,7 @@ void save_chi(grid * simulation, const char * filename, double (*part)(double co
     //Similarly, j must >= simulation->minus_a_index in order to let signal from the 1st qubit reach the boundary;
     //put it differently, one cannot take data before the first light cone intersects with the boundary x=Nx*Delta.
     double complex chi = 0;
-    for(int j=(simulation->Nx+simulation->nx/2+1); j<=simulation->Ny; j++)
+    for(int j=(simulation->Nx+simulation->nx/2+1); j<=simulation->Ny; j+=(simulation->Tstep+1))
     {
         for(int i=0; i<=simulation->Nx-simulation->nx/2; i++)
         {
