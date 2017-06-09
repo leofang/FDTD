@@ -51,6 +51,8 @@ Note that (i) these options cannot be simultaneously turned off, or the program 
 A Mathematica notebook is provided in the `utilities` folder for simple plotting purposes.
 
 ## License
-This code is released under the [WTFPL v2](http://www.wtfpl.net). For the academic uses, citation to **(ref)** is *strongly encouraged and acknowledged.* Copyright (C) 2016 Leo Fang.
+This code is released under the [WTFPL v2](http://www.wtfpl.net). For the academic uses, citation to **(ref)** is *strongly encouraged and acknowledged.* 
+
+Copyright (C) 2016 Leo Fang.
 
 This program is free software. It comes without any warranty, to the extent permitted by applicable law. You can redistribute it and/or modify it under the terms of the WTFPL, Version 2, as published by Sam Hocevar. See the accompanying LICENSE file or http://www.wtfpl.net/ for more details.
