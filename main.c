@@ -90,7 +90,8 @@ int main(int argc, char **argv)
            }
    
            //two-photon input: 2*( chi(x-t,-a-t, 0)-chi(x-t,a-t,0) )
-           if( simulation->init_cond == 1 && j-i>=-simulation->minus_a_index ) //it's nonzero only when t-x-a>=0 
+           if( (simulation->init_cond == 1 || simulation->init_cond == 3) \
+	       && j-i>=-simulation->minus_a_index ) //it's nonzero only when t-x-a>=0 
            { 
                double on_light_cone = (j-i == -simulation->minus_a_index?0.5:1.0);
 

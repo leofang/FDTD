@@ -104,7 +104,7 @@ double complex two_photon_input(double x1, double x2, grid * simulation)
 // update: argument x now refer to the "unit-less" coordinates, so "true x" = x * Delta
 double complex one_photon_exponential(double x, double k, double alpha, grid * simulation)
 {
-   if(x>simulation->minus_a_index)
+   if(x>-simulation->nx/2)
       return 0;
 
    double a_g = alpha * simulation->Gamma; 
