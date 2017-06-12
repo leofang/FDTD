@@ -107,7 +107,7 @@ double complex phi(int j, int i, grid * simulation)
       exit(EXIT_FAILURE);
    }
 
-   double complex Phi = one_photon_exponential(i-j, simulation);
+   double complex Phi = one_photon_exponential(i-simulation->origin_index-j, simulation->k, simulation->alpha, simulation);
 
    //convert the index to real position i=x/Delta
    i = i - simulation->minus_a_index - simulation->nx/2;

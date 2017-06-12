@@ -62,16 +62,23 @@ struct _grid
    int origin_index;  // array index for x=0 
 
    //physics parameters
-   double k;     // incident frequency (in units of 1/Delta)   
-   double w0;    // qubit frequency    (in units of 1/Delta)
-   double Gamma; // qubit decay rate   (in units of 1/Delta)
-   double alpha; // exponential tail   (dimensionless)
+   double k;      // incident frequency (in units of 1/Delta)   
+   double k1;     // incident frequency for photon #1 (in units of 1/Delta)   
+   double k2;     // incident frequency for photon #2 (in units of 1/Delta)   
+   double w0;     // qubit frequency  (in units of 1/Delta)
+   double Gamma;  // qubit decay rate (in units of 1/Delta)
+   double alpha;  // exponential tail (dimensionless)
+   double alpha1; // exponential tail for photon #1 (dimensionless)
+   double alpha2; // exponential tail for photon #2 (dimensionless)
+   double A;      // normalization constant for two-photon exponential wavepacket
 
    //actual info on dynamics
    double complex * psit0;  //initial condition psi(x,0) (stored as psi0[x])
    double complex ** psi;   //wavefunction psi(x,t) to be computed (stored as psi[t][x])
    double complex ** psix0; //boundary condition psi(-L,0) (stored as psix0[t][x])
    double complex * e0;     //qubit wavefunction for I.C. e(0)=0 and an exponential wavepacket
+   double complex * e0_1;   //qubit wavefunction for I.C. e(0)=0 and the exponential wavepacket #1
+   double complex * e0_2;   //qubit wavefunction for I.C. e(0)=0 and the exponential wavepacket #2
    double complex * e1;     //qubit wavefunction for I.C. e(0)=1 and no incident wavepacket
    double complex * mu;     //mu(t) for calculating NM measures
    double * lambda;         //lambda(t) for calculating NM measures
@@ -84,12 +91,13 @@ struct _grid
    int psix0_y_size; //array size of psix0 in t
 
    //program options
-   int save_chi;         //whether or not to save the two-photon wavefunction to file (default: no)
-   int save_psi;         //whether or not to save the wavefunction to file (default: no)
-   int save_psi_binary;  //whether or not to save the wavefunction to binary file (default: no)
-   int init_cond;        //the initial condition of the wavefunction (default: unspecified)
-   size_t Tstep;         //for output of save_psi: save psi for every (Tstep+1) temporal steps
-   int measure_NM;       //currently it means whether to save e0 and e1 or not //TODO: extend this part
+   int save_chi;          //whether or not to save the two-photon wavefunction to file (default: no)
+   int save_psi;          //whether or not to save the wavefunction to file (default: no)
+   int save_psi_binary;   //whether or not to save the wavefunction to binary file (default: no)
+   int init_cond;         //the initial condition of the wavefunction (default: unspecified)
+   int identical_photons; //whether or not the two photons are identical (default: yes; only effective for init_cond=3)
+   size_t Tstep;          //for output of save_psi: save psi for every (Tstep+1) temporal steps
+   int measure_NM;        //currently it means whether to save e0 and e1 or not //TODO: extend this part
 
    //input parameters (stored for convenience)
    kvarray_t * parameters_key_value_pair;
@@ -114,5 +122,6 @@ void save_chi(grid * simulation, const char * filename, double (*part)(double co
 void prepare_qubit_wavefunction(grid * simulation);
 void initialize_e0(grid * simulation);
 void initialize_e1(grid * simulation);
+void calculate_normalization_const(grid * simulation);
 
 #endif

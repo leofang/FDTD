@@ -9,6 +9,7 @@
  */
 
 #include "dynamics.h"
+#include <math.h>
 
 // this function computes the average of 4 points that form a square
 // j and i are the array indices psi[j][i] of the upper right corner
@@ -66,26 +67,47 @@ double complex bar_average(int j, int i, grid * simulation)
 
 
 //this function computes chi(x1, x2, 0)
-double complex two_photon_input(int i1, int i2, grid * simulation)
+//update: arguments x1 & x2 now refer to the "unit-less" coordinates, so "true x1" = x1 * Delta and so on
+double complex two_photon_input(double x1, double x2, grid * simulation)
 {
-   //TODO: make a flexible choice for different inputs
+   double complex chi = 0;
+   switch(simulation->init_cond)
+   {
+      //two-photon plane waves
+      case 1: { chi = cexp( I * simulation->k * (x1+x2) * simulation->Delta); } break;
 
-   double x1 = i1 * simulation->Delta;
-   double x2 = (i2+0.5) * simulation->Delta; //shift +0.5 due to Taylor expansion at the center of square //TODO: find a better way to write it
+      //two-photon exponentail wavepacket (init_cond=3)
+      case 3: {
+         if(simulation->identical_photons)
+            chi = one_photon_exponential(x1, simulation->k, simulation->alpha, simulation) \
+                  * one_photon_exponential(x2, simulation->k, simulation->alpha, simulation);
+         else
+         {
+            chi = simulation->A / sqrt(2.) *
+                  ( one_photon_exponential(x1, simulation->k1, simulation->alpha1, simulation) \
+                    * one_photon_exponential(x2, simulation->k2, simulation->alpha2, simulation) \
+                    + one_photon_exponential(x2, simulation->k1, simulation->alpha1, simulation) \
+                    * one_photon_exponential(x1, simulation->k2, simulation->alpha2, simulation) );
+         }
+      } break;
 
-   //Two-photon plane waves
-   return cexp( I * simulation->k * (x1+x2) );
+      //TODO: add other different inputs here
+      
+      default: { exit(EXIT_FAILURE); }
+   }
+
+   return chi;
 }
 
 
 // this function computes the exponential wavepacket with a sharp wavefront at x=-a
-double complex one_photon_exponential(int i, grid * simulation)
+// update: argument x now refer to the "unit-less" coordinates, so "true x" = x * Delta
+double complex one_photon_exponential(double x, double k, double alpha, grid * simulation)
 {
-   if(i>simulation->minus_a_index)
+   if(x>simulation->minus_a_index)
       return 0;
 
-   double x = (i - simulation->origin_index) * simulation->Delta;
-   double a_g = simulation->alpha*simulation->Gamma; 
+   double a_g = alpha * simulation->Gamma; 
    
-   return I*csqrt(a_g) * cexp(I*simulation->k*x + 0.5*a_g*(x+0.5*simulation->nx*simulation->Delta));
+   return I*csqrt(a_g) * cexp( (I*k*x + 0.5*a_g*(x+0.5*simulation->nx)) * simulation->Delta );
 }
