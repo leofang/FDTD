@@ -367,10 +367,17 @@ void sanity_check(grid * simulation)
         exit(EXIT_FAILURE);
     }
 
-    if(simulation->init_cond == 2 && !lookupValue(simulation->parameters_key_value_pair, "alpha"))
-    {//want to use exponential wavepacket but forget to set alpha's value
-        fprintf(stderr, "%s: alpha is not given. Abort!\n", __func__);
-        exit(EXIT_FAILURE);
+    if(simulation->init_cond == 2) 
+    {   
+        //want to use exponential wavepacket but forget to set alpha's value
+        if(!lookupValue(simulation->parameters_key_value_pair, "alpha"))
+	{
+           fprintf(stderr, "%s: alpha is not given. Abort!\n", __func__);
+           exit(EXIT_FAILURE);
+	}
+
+	//always 1 in this case, in case the user prepared it wrong
+	simulation->identical_photons = 1;
     }
 
     if(simulation->init_cond == 3) 
@@ -379,8 +386,8 @@ void sanity_check(grid * simulation)
        //so that identical_photons can be safely set to 1 as default
        if(!lookupValue(simulation->parameters_key_value_pair, "identical_photons"))
        {
-          fprintf(stderr, "%s: for two-photon wavapacket calculations, identical_photons needs to be specified (either 0 or 1). \
-		           Abort!\n", __func__);
+          fprintf(stderr, "%s: for two-photon wavapacket calculations, identical_photons needs to be specified (either 0 or 1). Abort!\n", 
+		 __func__);
           exit(EXIT_FAILURE);
        }
 
