@@ -692,22 +692,34 @@ void save_chi(grid * simulation, const char * filename, double (*part)(double co
 
     //compute chi(a+Delta, a+Delta+tau, t) with tau=i*Delta and t=j*Delta:
     //to make all terms in chi well-defined requires 0 <= i <= Nx-nx/2.
-    //Similarly, j must >= simulation->minus_a_index in order to let signal from the 1st qubit reach the boundary;
-    //put it differently, one cannot take data before the first light cone intersects with the boundary x=Nx*Delta.
-    double complex chi = 0;
-    for(int j=(simulation->Nx+simulation->nx/2+1); j<=simulation->Ny; j+=(simulation->Tstep+1))
+    //
+    //Update: To access transient dynamics for two photons, j now starts from 0 instead of minus_a_index (=Nx+nx/2+1)
+    //
+    //(In the previous version, j >= simulation->minus_a_index in order to let signal from the 1st qubit reach the boundary;
+    //put it differently, one cannot take data before the first light cone intersects with the boundary x=Nx*Delta.)
+    for(int j=0; j<=simulation->Ny; j+=(simulation->Tstep+1))
     {
         for(int i=0; i<=simulation->Nx-simulation->nx/2; i++)
         {
-            if(simulation->init_cond == 1 || simulation->init_cond == 3)
-	       chi = two_photon_input(simulation->nx/2+1-j, simulation->nx/2+1+i-j, simulation);
+            double complex chi = 0;
+	    double complex temp = 0;
 
-            chi += -sqrt(simulation->Gamma)/2.0 * \
-		  (  simulation->psi[j-(simulation->nx+i+1)][simulation->minus_a_index-i] \
-		   - simulation->psi[j-(i+1)][simulation->plus_a_index-i] \
-		   + simulation->psi[j-(simulation->nx+1)][simulation->minus_a_index+i] \
-		   - simulation->psi[j-1][simulation->plus_a_index+i] \
-		  );
+            if(simulation->init_cond == 1 || simulation->init_cond == 3)
+	       chi += two_photon_input(simulation->nx/2+1-j, simulation->nx/2+1+i-j, simulation);
+
+            if( j>=(simulation->nx+i+1) ) 
+	       temp += simulation->psi[j-(simulation->nx+i+1)][simulation->minus_a_index-i];
+
+            if( j>=(i+1) ) 
+	       temp -= simulation->psi[j-(i+1)][simulation->plus_a_index-i];
+
+	    if( j>=(simulation->nx+1) )
+	       temp += simulation->psi[j-(simulation->nx+1)][simulation->minus_a_index+i];
+
+	    if( j>=1 )
+	       temp -= simulation->psi[j-1][simulation->plus_a_index+i];
+
+            chi -= sqrt(simulation->Gamma)/2.0 * temp;
             fprintf( f, "%.5g ", part(chi) );
         }
         fprintf( f, "\n");
