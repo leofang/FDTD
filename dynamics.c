@@ -8,7 +8,6 @@
  * http://www.wtfpl.net/ for more details.
  */
 
-#include "grid.h"
 #include "dynamics.h"
 
 // Update Jun 21, 2017:

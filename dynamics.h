@@ -12,6 +12,7 @@
 #define __DYNAMICS_H__
 
 #include <math.h>
+#include "grid.h"
 
 /* Update Jun 21, 2017: 
  * To utilize the C99 inline specifier, it is required to put the function definitions 
