@@ -129,4 +129,65 @@ inline double complex two_photon_input(double x1, double x2, grid * simulation)
    return chi;
 }
 
+
+//this function calculates \int dx |\psi(x,t)|^2
+inline double psi_square_integral(int j, grid * simulation)
+{
+   if(j<0)
+   {
+      fprintf(stderr, "%s: argument j is negative (j=%i). Abort!\n", __func__, j);
+      exit(EXIT_FAILURE);
+   }
+
+   double sum = 0;
+   double Lambda = 0;
+   double t = j*simulation->Delta;
+   switch(simulation->init_cond)
+   {
+      case 2: {
+            if(j==0) return 1.0;
+
+            Lambda += exp(-simulation->alpha*simulation->Gamma*t);
+            Lambda *= pow(cabs(simulation->e1[j]), 2.0);
+	 }
+	 break;
+      case 3: {
+            if(j==0) return 0.0;
+
+            if(simulation->identical_photons)
+	    {
+	       Lambda += exp(-simulation->alpha*simulation->Gamma*t);
+               Lambda *= 2.0 * pow(cabs(simulation->e0[j]), 2.0);
+	    }
+	    else
+	    {
+	       Lambda += exp(-simulation->alpha1 * simulation->Gamma * t) * pow(cabs(simulation->e0_2[j]), 2.0);
+	       Lambda += exp(-simulation->alpha2 * simulation->Gamma * t) * pow(cabs(simulation->e0_1[j]), 2.0);
+	       double complex temp; 
+	       temp = I*sqrt(simulation->alpha1*simulation->alpha2)*simulation->Gamma*conj(simulation->e0_2[j])*simulation->e0_1[j]
+		      *cexp( (I*(simulation->k1-simulation->k2)-0.5*(simulation->alpha1+simulation->alpha2)*simulation->Gamma) * t)
+		      /(simulation->k1-simulation->k2+0.5*I*(simulation->alpha1+simulation->alpha2)*simulation->Gamma);
+	       Lambda += 2.0 * creal(temp);
+	       Lambda *= simulation->A * simulation->A;
+	    }
+	 }
+	 break;
+      default: { //bad input
+            fprintf(stderr, "%s: invalid option. Abort!\n", __func__);
+            exit(EXIT_FAILURE);
+         } 
+   }
+
+   int xmax = j + simulation->plus_a_index;
+   //trapezoidal rule for x>=-a
+   sum += 0.5 * pow(cabs(simulation->psi[j][simulation->minus_a_index]), 2.0);
+   for(int i = simulation->minus_a_index+1; i<xmax; i++)
+      sum += pow(cabs(simulation->psi[j][i]), 2.0);
+   sum += 0.5 * pow(cabs(simulation->psi[j][xmax]), 2.0);
+   Lambda += simulation->Delta * sum;
+
+   return Lambda;  
+}
+
+
 #endif

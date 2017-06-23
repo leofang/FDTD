@@ -752,3 +752,20 @@ void print_grid(grid * simulation)
         printf("\n");
     }
 }
+
+
+void save_psi_square_integral(grid * simulation, const char * filename)
+{
+    char * str = strdup(filename);
+    str = realloc(str, (strlen(filename)+18)*sizeof(char) );
+    strcat(str, ".psi_square.out");
+
+    int Tmax = (simulation->Ny-1 < simulation->Nx - simulation->nx/2 ? simulation->Ny-1 : simulation->Nx - simulation->nx/2);
+    FILE * f = fopen(str, "w");
+
+    for(int j=0; j<Tmax; j++)
+       fprintf( f, "%.10g\n", psi_square_integral(j, simulation) );
+
+    fclose(f);
+    free(str);
+}
