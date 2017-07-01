@@ -144,7 +144,7 @@ inline double psi_square_integral(int j, grid * simulation)
    double t = j*simulation->Delta;
    switch(simulation->init_cond)
    {
-      case 2: {
+      case 2: {// = e^(-alpha*Gamma*t)|e1(t)|^2 + \int_{-a}^\infty dx |psi(x,t)|^2
             if(j==0) return 1.0;
 
             Lambda += exp(-simulation->alpha*simulation->Gamma*t);
