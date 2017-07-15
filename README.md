@@ -30,7 +30,7 @@ gamma=0.0785398163
 save_psi=0
 save_chi=1
 ```
-For futher details (e.g., the layout of the grid, decriptions for various parameters, etc) see the comments in `grid.h` as well as the documentation. A Python script is provided in the `utilities` folder for the ease of preparing input.
+For futher details (e.g., the layout of the grid, decriptions for various parameters, etc) see the comments in `grid.h` as well as the [documentation](doc/FDTD_JORS_style.pdf). A Python script is provided in the `utilities` folder for the ease of preparing input.
 
 Currently two kinds of initial conditions are built in: two-photon plane wave (set `init_cond=1`) and single-photon exponential wavepacket (`init_cond=2`). For the latter, the (dimensionless) wavepacket width `alpha` needs to be specified. Other kinds of initial conditions can be incorperated into the code easily.
 
@@ -49,7 +49,9 @@ Depending on the options, the following files will be generated:
 
 Note that (i) these options cannot be simultaneously turned off, or the program would generate nothing; (ii) for the wavefunctions, each row in the output file gives the wavefunction along the x-direction starting from x=-a, and rows are written in the order t=0, t=Tstep+1, t=2(Tstep+1), ...
 
-A Mathematica notebook is provided in the `utilities` folder for simple plotting purposes. As a validation, sample animations are shown below to demonstrate that in the long-time limit the code apporaches the known results: ![](doc/g2_k0a_0.25pi_on.gif) ![](doc/g2_k0a_0.25pi_off_-1Gamma.gif)
+A Mathematica notebook is provided in the `utilities` folder for simple plotting purposes. As a validation, sample animations are shown below to demonstrate that in the long-time limit the code apporaches the known results (see the [documentation](doc/FDTD_JORS_style.pdf) for detail).
+
+![](doc/g2_k0a_0.25pi_on.gif) ![](doc/g2_k0a_0.25pi_off_-1Gamma.gif)
 ![](doc/g2_k0a_0.5pi_on.gif) ![](doc/g2_k0a_0.5pi_off_-1Gamma.gif)
 
 ## License
