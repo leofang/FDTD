@@ -1,0 +1,95 @@
+\begin{thebibliography}{10}
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\urlprefix}{URL }
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi:\discretionary{}{}{}#1}\else
+  \providecommand{\doi}{DOI: http://dx.doi.org/\discretionary{}{}{}\begingroup
+  \urlstyle{rm}\Url}\fi
+\providecommand{\eprint}[2][]{\url{#2}}
+
+\bibitem{LodahlRMP15}
+Lodahl P, Mahmoodian S, and Stobbe S, 2015, {Interfacing single photons and
+  single quantum dots with photonic nanostructures}, Rev Mod Phys 87(2): 347,
+  \doi{10.1103/RevModPhys.87.347}.
+
+\bibitem{RoyRMP17}
+Roy D, Wilson C~M, and Firstenberg O, 2017, {Colloquium: Strongly interacting
+  photons in one-dimensional continuum}, Rev Mod Phys 89: 021001,
+  \doi{10.1103/RevModPhys.89.021001}.
+
+\bibitem{NohRPP16}
+Noh C and Angelakis D~G, 2017, Quantum simulations and many-body physics with
+  light, Reports on Progress in Physics 80(1): 016401,
+  \doi{10.1088/0034-4885/80/1/016401}.
+
+\bibitem{LiaoPhyScr16}
+Liao Z, Zeng X, Nha H, and Zubairy M~S, 2016, {Photon transport in a
+  one-dimensional nanophotonic waveguide QED system}, Physica Scripta 91(6):
+  063004, \doi{10.1088/0031-8949/91/6/063004}.
+
+\bibitem{ZhengPRL13}
+Zheng H and Baranger H~U, 2013, Persistent Quantum Beats and Long-Distance
+  Entanglement from Waveguide-Mediated Interactions, Phys Rev Lett 110(11):
+  113601, \doi{10.1103/PhysRevLett.110.113601}.
+
+\bibitem{TufarelliPRA14}
+Tufarelli T, Kim M~S, and Ciccarello F, 2014, {Non-Markovianity of a quantum
+  emitter in front of a mirror}, Phys Rev A 90(1): 012113,
+  \doi{10.1103/PhysRevA.90.012113}.
+
+\bibitem{FangPRA15}
+Fang Y~L~L and Baranger H~U, 2015, {Waveguide QED: Power spectra and
+  correlations of two photons scattered off multiple distant qubits and a
+  mirror}, Phys Rev A 91(5): 053845, \doi{10.1103/PhysRevA.91.053845}.
+
+\bibitem{GrimsmoPRL15}
+Grimsmo A~L, 2015, {Time-Delayed Quantum Feedback Control}, Phys Rev Lett
+  115(6): 060402, \doi{10.1103/PhysRevLett.115.060402}.
+
+\bibitem{RamosPRA16}
+Ramos T, Vermersch B, Hauke P, Pichler H, and Zoller P, 2016, Non-Markovian
+  dynamics in chiral quantum networks with spins and photons, Phys Rev A 93:
+  062104, \doi{10.1103/PhysRevA.93.062104}.
+
+\bibitem{FangNM17}
+Fang Y~L~L, Ciccarello F, and Baranger H~U, 2017, {Non-Markovian dynamics of a
+  qubit due to single-photon scattering in a waveguide}. To appear on arXiv.
+
+\bibitem{Zubik_Kowal_Sch08}
+Zubik-Kowal B, 2008, Delay partial differential equations, Scholarpedia 3(4):
+  2851, \doi{10.4249/scholarpedia.2851}.
+
+\bibitem{FDTDbook}
+Taflove A and Hagness S~C, 2005, \emph{Computational Electrodynamics: the
+  Finite-Difference Time-Domain Method}, Artech House, Norwood, MA, 3rd
+  edition.
+
+\bibitem{FDTDnote}
+Schneider J~B, 2010, \emph{Understanding the Finite-Difference Time-Domain
+  Method}. \url{http://www.eecs.wsu.edu/~schneidj/ufdtd/}.
+
+\bibitem{NumericalRecipes}
+Press W~H, Teukolsky S~A, Vetterling W~T, and Flannery B~P, 2007,
+  \emph{Numerical Recipes: The Art of Scientific Computing}, Cambridge
+  University Press, 3rd edition.
+
+\bibitem{NISThandbook}
+Olver F~W~J, Lozier D~W, Boisvert R~F, and Clark C~W, 2010, \emph{NIST Handbook
+  of Mathematical Functions Hardback and CD-ROM}, Cambridge University Press.
+
+\bibitem{LorenzoPRA13}
+Lorenzo S, Plastina F, and Paternostro M, 2013, {Geometrical characterization
+  of non-Markovianity}, Phys Rev A 88(2): 020102,
+  \doi{10.1103/PhysRevA.88.020102}.
+
+\bibitem{PhotonicCrystalBook}
+Joannopoulos J~D, Johnson S~G, Winn J~N, and Meade R~D, 2008, \emph{Photonic
+  Crystals: Molding the Flow of Light}, Princeton University Press, 2nd
+  edition.
+
+\bibitem{GilACM17}
+Gil A, Ruiz-Antol\'{\i}n D, Segura J, and Temme N~M, 2016, Algorithm 969:
+  Computation of the Incomplete Gamma Function for Negative Values of the
+  Argument, ACM Trans Math Softw 43(3): 26:1, \doi{10.1145/2972951}.
+
+\end{thebibliography}

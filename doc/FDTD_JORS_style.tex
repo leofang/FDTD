@@ -1,0 +1,629 @@
+%\documentclass[pra,aps,preprint,showkeys,superscriptaddress,floatfix,letterpaper,longbibliography]{revtex4-1}
+% usual article documentclass
+\documentclass[12pt,letter,onecolumn,notitlepage]{article}
+
+% used for math symbols
+\usepackage[intlimits]{amsmath}
+\usepackage{amsfonts,amssymb}
+
+% to stick the position of figures (\begin{figure}[!htbp]) 
+\usepackage{float} 
+
+% Include figures/subfigures with captions/subcaptions. Note that a) both caption and subcaption packages are not compatible with REVTeX, b) the "caption=false" option for the subfig package is to prevent the caption package from being loaded, c) the "subrefformat=parens" option for the subfig package is to cite a specific subfigure like 1(a), 2(b), etc.
+\usepackage{graphicx}
+\usepackage[subrefformat=parens, caption=false]{subfig}
+%\usepackage{caption}
+%\usepackage[justification=justified,singlelinecheck=false]{subcaption} %The given option is to force the subcaptions aligning to the left.
+
+% specify the figure file types to be included
+%\DeclareGraphicsExtensions{.eps}
+
+% adjust the document boundary; seems no effect in REVTeX
+\usepackage[margin=0.7in]{geometry}
+
+% include appendices
+\usepackage[titletoc,toc,title]{appendix}
+
+% produce bibliography; not needed in RevTeX documentclass!
+\usepackage[numbers, compress]{natbib}
+
+% generate graphs and plots directly with (La)TeX
+%\usepackage{tikz}
+%\usepackage{pstricks}
+%\usepackage{pst-plot}
+
+% label equations based on sections (including appendices)
+%\numberwithin{equation}{section}
+
+% not so sure what these are
+%\usepackage{pdfpages}
+%\newtheorem{theorem}{Theorem}
+%\newtheorem{remark}[theorem]{Remark}
+%\usepackage{pst-xkey}
+
+% add hyperlinks to labels
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, citecolor=blue}
+\usepackage[all]{hypcap} % let hyperlinks correctly point to figures rather than their captions; must be loaded after the hyperref package!
+
+% change the font to Times Roman from the incredibly ugly Computer Modern
+\usepackage{times}
+
+% include Mathematica code 
+%\usepackage{listings}
+%\lstset{language=Mathematica}
+
+% control the float (together with \FloatBarrier)
+%\usepackage[section]{placeins}
+
+% another float control package
+%\usepackage{afterpage}
+
+%\setlength{\topmargin}{-0.75in}
+%\setlength{\textwidth}{5.8in}
+%\setlength{\textheight}{9.25in}
+%\setlength{\oddsidemargin}{0.3in}
+%\setlength{\evensidemargin}{0.3in}
+
+%%
+%% Float stuff
+%%
+%% \setlength{\floatsep}{4pt plus 4pt minus 4pt}
+ \setlength{\textfloatsep}{8pt plus 4pt minus 4pt}
+ \setlength{\dbltextfloatsep}{8pt plus 4pt minus 4pt}
+%%   \setlength{\intextsep}{0pt plus 2pt minus 2pt}
+ \setcounter{totalnumber}{4}
+ \setcounter{topnumber}{4}
+ \setcounter{bottomnumber}{4}
+ \renewcommand{\textfraction}{0.0} 
+ \renewcommand{\topfraction}{1.0}
+ \renewcommand{\bottomfraction}{1.0}
+
+\usepackage{color}
+
+% use the "hooked" Greek symbol \tau
+\usepackage{upgreek}
+
+% refer to a certain panel of a composite figure with hyperlink
+\newcommand{\figurepanel}[2]{\hyperref[#1]{\ref*{#1}(#2)}}
+
+% break multiple equations to different pages
+\allowdisplaybreaks[2] % 1 means page breaks are allowed, but avoided if possible
+
+\usepackage[T1]{fontenc} % to correcly display underscores in text
+
+\makeatletter
+
+% to ``slash'' or ``strike out'' letters
+\usepackage{cancel}
+
+%\usepackage{array}
+
+% to add affiliations in the article environment
+\usepackage{authblk}
+
+% add footnotes in tables
+\usepackage{tablefootnote}
+%\usepackage{footnote}
+%\makesavenoteenv{tabular}
+%\makesavenoteenv{table}
+
+% keyword command
+\providecommand{\keywords}[1]{\textbf{\textit{Keywords:}} #1}
+
+\DeclareMathOperator{\re}{Re}
+\DeclareMathOperator{\im}{Im}
+\DeclareMathOperator{\res}{Res}
+
+
+\begin{document}
+\title{FDTD: solving 1+1D delay PDE}
+%\author[1]{Yao-Lung L. Fang 
+\author{Yao-Lung L. Fang 
+	\thanks{Email address: \texttt{leofang@mailaps.org}}}
+%\author[2,1]{Francesco Ciccarello}
+%\author[1]{Harold U. Baranger}
+\affil{\footnotesize{Department of Physics, Duke University, P.O. Box 90305, Durham, North Carolina 27708-0305, USA}}
+%\affil[1]{\footnotesize{Department of Physics, Duke University, P.O. Box 90305, Durham, North Carolina 27708-0305, USA}}
+%\affil[2]{\footnotesize{NEST, Istituto Nanoscienze-CNR and Dipartimento di Fisica e Chimica, Universita' degli Studi di Palermo, Italy}}
+\date{\footnotesize Dated: \today}
+\maketitle
+
+\begin{abstract}
+	We present a proof of concept for adapting the finite-difference time-domain method (FDTD) for solving a 1+1D complex-valued, delay partial differential equation (PDE) that emerges in the study of waveguide quantum electrodynamics (QED). The delay term exists in both spatial and temporal directions, rendering the conventional approaches such as the method of lines inapplicable. 
+	%As a result, the entire solution of the delay PDE must be stored in the memory for easy lookup. 
+	We show that by properly designing the grid and by using the exact (partial) solution as the boundary condition, the delay PDE can be numerically solved. Our code provides a numerically exact solution to the time-dependent multi-photon scattering problem in waveguide QED. The program is written in C and open-sourced on GitHub.% under the WTFPL license.
+	%and conforms to the C99 standard, and several utility scripts are provided for the ease of post-processing .
+\end{abstract}
+
+\keywords{Waveguide QED, Delay PDE, FDTD, Non-Markovianity}
+
+
+\tableofcontents
+
+\section{Overview}
+\subsection{Introduction}
+Waveguide quantum electrodynamics (QED) concerns the interaction between one-dimensional (1D) waveguide photons and local emitters (atoms, qubits, etc.) \cite{LodahlRMP15,RoyRMP17,NohRPP16,LiaoPhyScr16}. In the cases where a coherent feedback loop is formed due to the presence of, for example, multiple distant emitters or a perfect mirror terminating the waveguide, the propagation of photons needs to be taken into account rigorously if the time of flight is non-negligible compared to the decay time \cite{ZhengPRL13,TufarelliPRA14,FangPRA15,GrimsmoPRL15,RamosPRA16}.
+
+As a concrete example, we consider a two-level system (2LS) coupled to a semi-infinite waveguide \cite{FangPRA15, FangNM17}. Denoting the atom-mirror separation as $a$, we arrive at a 1+1D delay partial differential equation (PDE) that describes the (complex-valued) time-dependent wavefunction, $\psi(x,t)$, in the two-excitation sector for the 2LS plus a photon at position $x$:
+%\begin{widetext}
+\begin{align}
+\frac{\partial}{\partial t}\psi(x,t)&=-\frac{\partial}{\partial x}\psi(x,t)-\left(i\omega_0+\frac{\Gamma}{2}\right)\psi(x,t)+\frac{\Gamma}{2}\psi(x-2a, t-2a)\theta(t-2a)  \label{eq:double-excitation delay differential eq}\\
+&\quad- \frac{\Gamma}{2}\Biggl\{\Bigl[\psi(- x- 2a, t- x- a) - \psi(- x, t- x- a)\Bigr]\theta(x+a)\theta(t- x- a)\nonumber\\
+&\quad\quad\quad +\Bigl[\psi(2a- x, t- x+ a)- \psi(- x, t- x+a)\Bigr]\theta(x- a)\theta(t- x+ a)\Biggr\} \nonumber\\
+&\quad+\sqrt{\frac{\Gamma}{4}}\biggl[\chi(x-t,-a-t,0)+\chi(-a-t,x-t,0)-\chi(x-t,a-t,0)-\chi(a-t,x-t,0)\biggr]\nonumber,
+\end{align}
+%\end{widetext}
+where $\omega_0$ ($\Gamma$) is the 2LS frequency (decay rate), $\theta(x)$ is the step function, and $\chi(x_1, x_2,t )$ is the two-photon wavefunction (one at position $x_1$, another at $x_2$). The detailed discussion of this problem is reported elsewhere \cite{FangNM17}.
+
+While delay PDEs have emerged in other scientific and engineering contexts and been numerically studied using, for example, the method of lines \cite{Zubik_Kowal_Sch08}, we emphasize that as far as we understand, those approaches cannot be directly applied to our problem, as the delay term in Eq.~\eqref{eq:double-excitation delay differential eq} lies in both $x$ and $t$ dimensions, contrary to the common notion of delay PDE in which only one of the dimensions is delayed \cite{Zubik_Kowal_Sch08}. Furthermore, to the best of our knowledge there is no general-purpose solvers for delay PDE. As a result, we implement the finite-difference time-domain (FDTD) method and demonstrate its validity in this paper.  
+
+The main purpose of this work is therefore three-fold: (i) to numerically solve Eq.~\eqref{eq:double-excitation delay differential eq} using FDTD; (ii) to provide a proof of concept that FDTD works well in tackling complex-valued, spatial-temporal-delayed PDE; (iii)  to present a numerically exact solution to the \textit{time-dependent, multi-photon scattering} problem in waveguide QED.
+
+
+\subsection{Implementation and architecture}
+%\section{Method and implementation}
+FDTD is widely used by engineers, especially those designing antennas, doing computational electrodynamics, studying plasmonics, etc. 
+%In the context of our study, however, it is very similar to the central difference method introduced in standard numerical analysis \cite{NumericalRecipes}. As a result, 
+Below we briefly discuss how FDTD works, and refer interested readers to Refs.~\cite{FDTDbook,FDTDnote} for the details.
+
+Like most of differential-equation solving methods, FDTD discretizes the spacetime, and different discretizations have different pros and cons. For simplicity we choose a square lattice, and note in passing that in real FDTD applications the Yee lattice is more common, as the conservation laws of EM fields are trivially true on the Yee lattice. Let's set the ratio of the spatial step $\Delta_x$  to the temporal step $\Delta_t$  equal to the speed of light $c=1$ so that $\Delta_t=\Delta_x=\Delta$. (In FDTD, $\Delta_x/\Delta_t\geq c$ is called the Courant condition and is hold when the algorithm is stable. See Appendix \ref{appen: stability} for a simplified discussion on stability.)
+
+
+\begin{figure}[bhtp]
+	\centering
+	\includegraphics[scale=0.65]{FDTD_schematic}
+	\caption{The schematic of the spacetime layout used in FDTD. Note that the lines $x=\pm a=\pm (n_x/2)\Delta$ locate in the blue region if $n_x\leq2N_x$, and that $x=-a$ is at the center of the grid.}
+	\label{fig:FDTD_schematic}
+\end{figure}
+
+
+We next express every term in Eq.~\eqref{eq:double-excitation delay differential eq} using finite differences. We use the ``leapfrog'' prescription that has $\mathcal{O}(\Delta^2)$ accuracy \cite{NumericalRecipes}:
+\begin{align}
+	\frac{\partial f(x+\Delta/2,t+\Delta/2)}{\partial t} & \approx\frac{1}{\Delta} \biggl(\frac{f(x,t+\Delta)+f(x+\Delta,t+\Delta)}{2}
+		-\frac{f(x,t)+f(x+\Delta,t)}{2}\biggr)\\
+	\frac{\partial f(x+\Delta/2,t+\Delta/2)}{\partial x} &\approx \frac{1}{\Delta} \biggl(\frac{f(x+\Delta,t+\Delta)+f(x+\Delta,t)}{2}
+		-\frac{f(x,t)+f(x,t+\Delta)}{2} \biggr)\\
+	f(x+\Delta/2,t+\Delta/2)&\approx \frac{1}{4}\biggl(f(x+\Delta,t+\Delta)+f(x+\Delta,t)
+		+f(x,t+\Delta)+f(x,t)\biggr) \label{eq:square average}
+\end{align}
+In the code we call Eq.~\eqref{eq:square average} a ``square,'' because the value at the center of a square is approximated using the values at its four corners. These discretization rules apply to the terms in the first line of Eq.~\eqref{eq:double-excitation delay differential eq} so that given the values at three corners, the value at the top right corner of a square can be solved. As for those terms in the second and the third lines of Eq.~\eqref{eq:double-excitation delay differential eq}, hereafter referred to as the source terms \cite{FangNM17}, we need a different representation:
+\begin{equation}
+f(x+\Delta/2,t)\approx \frac{1}{2}\biggl( f(x,t) + f(x+\Delta,t)\biggr), \label{eq:bar average}
+\end{equation}
+which is referred to as a ``bar'' in the code. The reason for using bars over squares will become clear shortly.
+
+%For example, if we were to solve a simple PDE $df/dx+df/dt+W f(x,t)=0$ ($W$ is a constant), then using the above discretization rules we have 
+%\begin{equation}
+%  f(x+\Delta, t+\Delta)=\frac{1}{1/\Delta+W/4}\left[\left(\frac{1}{\Delta}-\frac{W}{4}\right)f(x,t)
+%  -\frac{W}{4}\biggl(f(x,t+\Delta)+f(x+\Delta,t)\biggr)\right].
+%  \label{eq:simple discretization}
+%\end{equation}
+%Therefore, if we know the values $f(x,t)$, $f(x+\Delta,t)$ and $f(x,t+\Delta)$, we can advance one spatial step and solve for $f(x+\Delta, t+\Delta)$, the value at the top-right corner of the square. Once we solve all values at a particular time $t$, we can advance one temporal step and solve those at $t+\Delta$. This constitutes the marching strategy of FDTD. Note that if $W=0$, $f(x+\Delta, t+\Delta)=f(x,t)$ since they are connected by the same light cone.
+
+\begin{table}[bhtp]
+	\centering
+	\caption{\label{table:input} Summary of all input parameters accepted by our program.}
+%	\begin{ruledtabular} % add double rules; RevTeX4 only
+		\begin{tabular}{|c| p{9cm} |c| c|}
+			\hline
+			\textbf{Parameter} &  \textbf{Description} & \textbf{Mandatory} & \textbf{Default} \\ \hline
+			\texttt{Nx} & Defined such that total grid points (to be solved) along $x$ is $2N_x+1$ (so $x/\Delta\in[-N_x,N_x]$) & Yes & n/a \\ \hline
+			\texttt{Ny} & Total grid points along $t$ (so $t/\Delta\in[0,N_y-1]$) & Yes & n/a \\ \hline
+			\texttt{nx} & $n_x = 2a/\Delta$; $n_x$ needs to be an integer multiple of 2 and $n_x\leq2N_x$ & Yes & n/a \\ \hline
+			\texttt{Delta} & Step size $\Delta$ (See Appendix~\ref{appen: translation}) & Yes &  n/a\\ \hline
+			\texttt{k} & Driving frequency $k$ (in units of $\Delta^{-1}$) & Yes & n/a \\ \hline
+			\texttt{w0} & 2LS frequency $\omega_0$ (in units of $\Delta^{-1}$) & Yes & n/a\\ \hline
+			\texttt{gamma} & 2LS decay rate $\Gamma$ (in units of $\Delta^{-1}$) & Yes & n/a\\ \hline
+			\texttt{init\_cond} & 1: two-photon scattering (plane wave); 2: stimulated emission (single-photon exponential wavepacket) & Yes & 0 \\ \hline
+			\texttt{alpha} & Wavepacket width $\alpha$ (dimensionless) & No\tablefootnote{Needed when \texttt{init\_cond=2}, and ineffective when \texttt{init\_cond=1}.} & 0 \\ \hline
+			\texttt{save\_chi} & Output $\chi(a+\Delta, a+\Delta+\uptau, t)$ as plain text & No\tablefootnote{The four options cannot be simultaneously turned off (set to 0), or no output will be generated.\label{note2}} & 0 \\ \hline
+			\texttt{save\_psi} & Output $\psi(x, t)$ as plain text & No\textsuperscript{\ref{note2}} & 0 \\ \hline
+			\texttt{save\_psi\_binary} & Output $\psi(x, t)$ as binary & No\textsuperscript{\ref{note2}} & 0 \\ \hline
+			\texttt{measure\_NM} & See Appendix~\ref{append: NM} & No\textsuperscript{\ref{note2},}\tablefootnote{Requires \texttt{init\_cond=2}.} & 0\\ \hline
+			\texttt{Tstep} & Output the wavefunctions for every $\texttt{Tstep}+1$ temporal steps& No & 0 \\ \hline
+		\end{tabular}
+%	\end{ruledtabular}
+\end{table}
+%\footnote{Needed when \texttt{init\_cond=2}, and ineffective when \texttt{init\_cond=1}.\label{note1}}
+%\footnote{The four options cannot be simultaneously turned off (set to 0), or no output will be generated.\label{note2}}
+%\footnote{Requires \texttt{init\_cond=2}.\label{note3}}
+
+Now we have everything we need to discretize Eq.~\eqref{eq:double-excitation delay differential eq}. For putting the problem on a computer, we also need to draw a ``box'' as we cannot indefinitely walk through the entire spacetime. As a result, we need to specify 4 parameters to define the box geometry: \texttt{Nx}, \texttt{Ny}, \texttt{nx}, and \texttt{Delta}; see Table~\ref{table:input} for the list of accepted input parameters.
+The corresponding layout is shown in Fig.~\ref{fig:FDTD_schematic}. Note that (a) the initial condition is given on the line $t=0$ (the purple strip); (b) the boundary condition is given for not just one line, as needed for solving ordinary (space-local and time-local) PDEs, but for a wide area (the green region) because of the delay and source terms; (c) to reach $x\geq+a$ and to make the layout well-defined, we need $n_x$ to be an integer multiple of 2 and $n_x\leq2N_x$; (d) the step size $\Delta$ can be given \textit{arbitrarily}, see Appendix~\ref{appen: translation}.
+
+
+%A digression: It is important to keep in mind that $\Delta$ plays the role of length (and time) in dimensional analysis, so we have a degree of freedom (dof) to choose its value without affecting the physics, as if we were changing the length unit. We emphasize this notion because 
+%from time to time one may ask ``$\Delta=0.01$ in what? Wavelength?'' and the correct answer is ``No, it's just a number. We use this dof to prevent overflow, to improve numerical accuracy, to blahblahblah''. %We will see later how to express things like ``$x=3\Delta$'' in units of wavelength or inverse decay rate.
+%there is in fact a deeper reason for having this dof: Eq.~\eqref{eq:double-excitation delay differential eq} is a wave equation, and thus \textit{scale invariant} \cite{PhotonicCrystalBook}. It is well-known that FDTD is quite suitable for scale-invariant problems. Therefore, the step size $\Delta$ is just a conceptual quantity helping the translation from the continuous world to the discrete world, and is irrelevant of the physics. 
+%%This is mostly transparent by rewriting Eq.~\eqref{eq:simple discretization} as
+%%\begin{equation}
+%%f(x+\Delta, t+\Delta)=\frac{1}{1+W\Delta/4}\left[\left(1-\frac{W\Delta}{4}\right)f(x,t)
+%%-\frac{W\Delta}{4}\biggl(f(x,t+\Delta)+f(x+\Delta,t)\biggr)\right].
+%%%\label{eq:simple discretization}
+%%\end{equation}
+%What matters is the dimensionless quantities such as $(\omega_0\Delta)$ and $(\Gamma\Delta)$, not $\Delta$ itself. In the current implementation, we still explicitly keep $\Delta$, but it is not necessary if the code is designed in a different way. Appendix \ref{appen: translation} provides a further discussion.
+
+
+It is illustrative to see how the FDTD solves Eq.~\eqref{eq:double-excitation delay differential eq}. Fig.~\ref{fig:FDTD_grid} shows a snapshot of the space-then-time marching strategy. Each term in Eq.~\eqref{eq:double-excitation delay differential eq} has a different color for easy identification, and we use all previously solved values to solve for the top-right corner of the blue square, which is circled in red. Note that there are four colors that each has only two points (the ``bars''), because when we Taylor-expand at the black cross, those terms are expanded at the center of the two points. 
+%\begin{equation}
+%	f(x+\Delta/2,t)\approx \frac{1}{2}\biggl( f(x,t) + f(x+\Delta,t)\biggr)\quad \text{(bar)},
+%\end{equation}
+%which are referred to as ``bars'' in the code. In contrary to the ``squares'' [Eq.~\eqref{eq:square average}] that have $\mathcal{O}(\Delta^2)$ accuracy, bars only have $\mathcal{O}(\Delta)$, which is the reason the error grows as we'll see later. 
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[scale=0.4]{FDTD_grid}
+	\caption{An example of calculating $\psi(x,t)$ for the circled point on the square lattice. The slant lines represent light cones extended from the coupling points at $x=\pm a$. $n_x$ is chosen to be 4 for illustrative purposes, and the black cross denotes the Taylor-expansion point. The other colored points contribute to the point to be solved [each color corresponds to a term in Eq.~\eqref{eq:double-excitation delay differential eq}].}
+	\label{fig:FDTD_grid}
+\end{figure}
+
+Furthermore, from Fig.~\ref{fig:FDTD_grid} one can appreciate the fact that in general the system is highly ``non-Markovian,'' since solving the wavefunction at a certain time needs to look up the system's memory (solved values at earlier times); that is, the quantum system has a dependence on its past history. In terms of programming, this brings in a heavy burden because one can no longer discard values at earlier times, as typically done in solving ordinary PDEs. Instead, one needs to keep all grid points in the memory, so the hardware constraints are an important factor. 
+
+For example, as we are solving a complex wavefunction,
+depending on the grid size it can be very memory-consuming (each grid point stores a complex double number and thus takes 16 bytes)
+%--- a grid size smaller than 12500*40000 is enough to crash a computer with 8GB ram!) 
+and space-consuming (the wavefunction is written to a plain txt when the calculation is done). So use the program with caution. A quick estimation for memory usage is $32N_xN_y/1024^3$ (in GB), and for disk usage divided by $\texttt{Tstep}+1$.
+
+Currently the FDTD program can solve two classes of problems, and for each class the boundary condition (green in Fig.~\ref{fig:FDTD_schematic}) is given by known analytical expressions \cite{FangNM17}:
+\begin{enumerate}
+	\item[(a)] \textit{Two-photon scattering}: the incoming photons are described by continuous wave, $\chi(x_1, x_2, 0) = A^2 \exp[i k (x_1+x_2)]\theta(-a-x_1)\theta(-a-x_2)$, and the initial condition for $\psi$ is simply $\psi(x,0)=0$ (the 2LS is initially in its ground state). Therefore, we need to supply three more parameters that are physics-related: \texttt{k}, \texttt{w0}, and \texttt{gamma}; see Table~\ref{table:input}. So for this case the program needs 7 mandatory parameters in total.
+	
+In $x<-a$, the solution to Eq.~\eqref{eq:double-excitation delay differential eq} is 
+\begin{equation}
+\psi(x,t) = \sqrt{2}e^{ik(x-t)}e_0(t), 
+\label{eq: BC two-photon scattering}
+\end{equation}
+where $e_0(t)$ is the 2LS wavefunction, solved in the one-excitation sector assuming $e_0(0)=0$ and $\phi(x, 0)=A e^{ikx}\theta(-a-x)$,
+\begin{align}
+ e_0(t)&=\frac{i\sqrt{\frac{\Gamma}{2}} Ae^{-ika}(e^{-ikt}-e^{-(i\omega_0+\Gamma/2)t})}{k-\omega_0+i\Gamma/2}\nonumber\\
+ &\quad- Ae^{-ika} \sum_{n=1}^{\infty}\frac{\left(\frac{\Gamma}{2}\right)^{n-1/2}}{n!p^{n+1}}
+ \Bigl[p^{n+1}(t-2na)^n e^{-(i\omega_0+\Gamma/2)(t-2na)}\nonumber\\
+ &\quad\quad+i^n(k-\omega_0)\gamma(n+1,-ip(t-2na))e^{-ik(t-2na)}
+ \Bigr]\theta(t-2na),
+ \label{eq:exact solution single-photon scattering}
+\end{align}
+where $p=k-\omega_0+i\Gamma/2$, and $\gamma(n, z)$ is the (lower) incomplete Gamma function \cite{NISThandbook}. We note that evaluating $\gamma(n, z)$ on the complex plane is in general a non-trivial task; see the discussion in Appendix~\ref{appen: incom_gamma}.
+The above expressions are used to generate initial and boundary conditions. Finally, we note that $A=1$ is set in the program for convenience.
+%, but one should be cautious when interpreting its meaning; see the discussion in Ref.~\cite{FangNM17}.
+    \item[(b)] \textit{Stimulated emission}: a single-photon exponential wavepacket is sent in, with the 2LS initially excited:
+\begin{equation}
+	\psi(x,0)=i\sqrt{\alpha \Gamma} e^{ikx+\alpha\Gamma(x+a)/2}\theta(-x-a),
+	\label{eq:single-photon exponential wavepacket}
+\end{equation}
+and $\chi(x_1, x_2, 0)=0$. So one also needs to specify the dimensionless wavepacket width $\alpha$ in the input file in addition to the seven mandatory parameters for this case. In $x<-a$, the boundary condition is given by 
+\begin{equation}
+\psi(x,t) = \psi(x-t, 0)\times e_1(t),
+\end{equation}
+where $e_1(t)$ is again the 2LS wavefunction solved in the one-excitation sector assuming $e_1(0)=1$ and $\phi(x, 0) =0$,
+\begin{equation}
+e_1(t)=e^{-(i\omega_0+\frac{\Gamma}{2})t}\sum_{n=0}^{\infty}\frac{1}{n!}\left[\frac{\Gamma}{2}e^{(i\omega_0+\frac{\Gamma}{2})2a}(t-2na)\right]^n\theta(t-2na).
+\label{eq:spontaneous emission solution}
+\end{equation}
+\end{enumerate}
+One could easily tweak the code to accept other kinds of initial conditions, but the strategy for solving Eq.~\eqref{eq:double-excitation delay differential eq} remains the same for all possible scenarios. It is important to note that if we cannot provide analytical solutions in $x<-a$ as the boundary condition, we cannot solve Eq.~\eqref{eq:double-excitation delay differential eq} numerically. But we do not need to know more either --- the constraint $n_x\leq 2N_x$ guarantees that knowing the wavefunction in $x<-a$ is sufficient, as it makes the line $x=-a$ lie outside of the green region in Fig.~\ref{fig:FDTD_schematic} so that the boundary condition is completely determined. 
+%Currently the boundary condition is generated in the code using the above expressions, because this is more efficient than generating it elsewhere and then loading the data into the memory.
+
+Finally, to calculate various non-Markovian measures using the solution of $\psi$, instead of post-processing it is much easier to do most of the work \textit{in situ}. To construct the geometric measure \cite{LorenzoPRA13}, two functions $\lambda(t)$ and $\mu(t)$ can be calculated \cite{FangNM17}.\footnote{Due to historical reasons, in Ref.~\cite{FangNM17} $\mu(t)$ is called $c(t)$ and $\lambda(t)$ is called $\Delta(t)$, respectively. The authors regret the inconvenience.\label{note5}}
+% and the BLP measure \cite{BreuerPRL09}. 
+The detail of the implementation is presented in Appendix~\ref{append: NM}. 
+
+
+\subsection{Quality control}
+%\section{Validation}
+User instruction for the program is given in the \texttt{README.md} file distributed along with the code.
+We have tested our program on both Linux and Mac OS X.
+There are at least three possible tests to pass for establishing the validity of this code: 1. $\psi$ in $x<-a$, where we know the full, exact solution; 2. $\psi$ in $-a<x<a$ because we can solve for the first few triangular tiles analytically \cite{FangNM17}; 3. the two-photon wavefunction $\chi$, because we know the steady-state result from scattering theory \cite{FangPRA15}.
+
+
+\begin{figure}[htbp]%[!htbp]
+	\centering
+		\includegraphics[scale=0.6]{abs_error_t_99}
+		\includegraphics[scale=0.6]{rel_error_t_99}
+	\caption{Absolute (left) and relative (right) errors for $\re(\psi)$ as a function of spatial steps (in units of $\Delta$) at $t=99\Delta$. The last step corresponds to $x=-a$. Input parameters: $n_x=200, N_x=4000, N_y=4\times10^4, \Delta=10^{-2}, k=\omega_0=\pi/2, \Gamma=\pi/40$.}
+	\label{fig:error 99}
+\end{figure}
+
+\begin{figure}[htbp]%[!htbp]
+	\centering
+		\includegraphics[scale=0.6]{abs_error_t_500}
+		\includegraphics[scale=0.6]{rel_error_t_500}
+		\caption{Absolute (left) and relative (right) errors for $\re(\psi)$ as a function of spatial steps (in units of $\Delta$) at $t=500\Delta$. All parameters are the same as those in Fig.~\ref{fig:error 99}.}
+		\label{fig:error 500}
+\end{figure}
+
+\begin{figure}[htbp]%[!htbp]
+	\centering
+	\includegraphics[scale=0.6]{abs_error_t_999}
+	\includegraphics[scale=0.6]{rel_error_t_999}
+	\caption{Absolute (left) and relative (right) errors for $\re(\psi)$ as a function of spatial steps (in units of $\Delta$) at $t=999\Delta$. All parameters are the same as those in Fig.~\ref{fig:error 99}.}
+	\label{fig:error 999}
+\end{figure}
+
+
+\begin{figure}[htbp]%[!htbp]
+	\centering
+	\includegraphics[scale=0.6]{abs_error_t_39999}
+	\includegraphics[scale=0.6]{rel_error_t_39999}
+	\caption{Absolute (left) and relative (right) errors for $\re(\psi)$ as a function of spatial steps (in units of $\Delta$) at $t=39999\Delta$. All parameters are the same as those in Fig.~\ref{fig:error 99}.}
+	\label{fig:error 39999}
+\end{figure}
+
+
+\begin{figure}[hbtp]%[!htbp]
+	\centering
+	\includegraphics[scale=0.6]{{g2_k0a_0.25pi_on}.jpg}
+	\includegraphics[scale=0.6]{{g2_k0a_0.25pi_off_-1Gamma}.jpg}
+	\caption{Comparison of calculated two-photon wavefunction $|\chi|^2$ (red dots) as a function of photon separation $\uptau$ in the long-time limit for $k_0a=\pi/4$ and (left) $k=\omega_0$ (right) $k=\omega_0-\Gamma$. The blue curves are from scattering theory with Markovian approximation \cite{FangPRA15}. Input parameters: $n_x=50, N_x=10^4, N_y=2.5\times10^4, \Delta=10^{-2}, \omega_0=3.1415926536, \Gamma=0.1570796327$.}
+	\label{fig:g2 piover4}
+\end{figure}
+
+
+\begin{figure}[htbp]%[!htbp]
+	\centering
+	\includegraphics[scale=0.6]{{g2_k0a_0.5pi_on}.jpg}
+	\includegraphics[scale=0.6]{{g2_k0a_0.5pi_off_-1Gamma}.jpg}
+	\caption{Comparison of calculated two-photon wavefunction $|\chi|^2$ (red dots) as a function of photon separation $\uptau$ in the long-time limit for $k_0a=\pi/2$ and (left) $k=\omega_0$ (right) $k=\omega_0-\Gamma$. The blue curves are from scattering theory with Markovian approximation \cite{FangPRA15}, and the vertical lines indicate $t=2a$. Input parameters: $n_x=200, N_x=10^4, N_y=2\times10^4, \Delta=10^{-2}, \omega_0=1.5707963268, \Gamma=0.0785398163$.}
+	\label{fig:g2 piover2}
+\end{figure}
+
+\begin{figure}[!htbp]%[!htbp]
+	\centering
+	\includegraphics[scale=0.6]{{g2_k0a_10.5pi_on}.pdf}
+	\includegraphics[scale=0.6]{{g2_k0a_20.5pi_on}.pdf}
+	\caption{Comparison of calculated two-photon wavefunction $|\chi|^2$ (red dots) as a function of photon separation $\uptau$ in the long-time limit for $k=\omega_0$ and (left) $k_0a=10.5\pi$ (right) $k_0a=20.5\pi$. The blue dots are from exact scattering theory \cite{FangPRA15}, and the vertical lines indicate $t=2a$. Input parameters: $N_x=10^4, N_y=5\times10^4, \Delta=10^{-2}, k=\omega_0=6.2831853072, \Gamma=0.0628318531$.}
+	\label{fig:g2 NM}
+\end{figure}
+
+For the first test, in Figs.~\ref{fig:error 99}-\ref{fig:error 39999} we show several snapshots of the absolute and relative errors of the real part of $\psi$ as a function of steps in the $x$-direction (and $x\leq-a$ in all plots).
+Note two common features in these plots: (a) the error is zero in the initial steps because it's where the boundary condition is; (b) errors are well-controlled in the sense that they are bounded in an oscillating envelope, so the program behaves correctly at least in $x<-a$.
+
+%For short time (Fig.~\ref{fig:error 99}) the absolute error matches the expected accuracy $\sim\mathcal{O}(\Delta^2)$, because the bar (source) terms do not bring in much influence yet. For intermediate times (Figs.~\ref{fig:error 500}, \ref{fig:error 999}), the absolute error starts growing a bit ($\gtrsim10^{-4}$). Finally, for very long time (Fig.~\ref{fig:error 39999}) the absolute error is on the order of $\Delta=10^{-2}$, matching the accuracy of the bar terms.
+
+For the second test, we generated the analytical expressions of $\psi$ in the first four tiles (the fifth one took too much time to compute) in \textit{Mathematica} \cite{FangNM17} and then compared the values on the grid points of FDTD. The numerical result agreed well too (not shown).
+
+Finally, to compare with the scattering theory we can construct the two-photon wavefunction $\chi$ using the calculated $\psi$ according to the formal solution of $\chi$
+\begin{align}
+\chi(x_1, x_2, t)& = \chi(x_1-t, x_2-t, 0)-\frac{V}{\sqrt{2}}\biggl[
+\psi(x_1-x_2-a, t-x_2-a)\theta(x_2+a)\theta(t-x_2-a)\nonumber\\
+&\quad
+-\psi(x_1-x_2+a, t-x_2+a)\theta(x_2-a)\theta(t-x_2+a) +\bigl(x_2 \leftrightarrow x_1\bigr)
+%&\quad
+%+\psi(x_2-x_1-a, t-x_1-a)\theta(x_1+a)\theta(t-x_1-a)\nonumber\\
+%&\quad
+%-\psi(x_2-x_1+a, t-x_1+a)\theta(x_1-a)\theta(t-x_1+a)
+\biggr],
+\label{eq:formal solution of two-photon wavefunction}
+\end{align}
+where the coordinates $x_1$ and $x_2$ should be chosen as $x_{1,2}\geq +a$ for capturing the outgoing fields. In the program, $\chi$ is calculated by setting $x_1=a+\Delta$ and $x_2=a+\Delta+\uptau$, with $\uptau=x_2-x_1$ being the separation of the two detectors.\footnote{We note that by definition the two-photon correlation function is given by $g_2(\uptau) = |\chi(x_d, x_d+\uptau, t\rightarrow\infty)|^2$ with $x_d\geq+a$.} The results are shown in Figs.~\ref{fig:g2 piover4}-\ref{fig:g2 NM}. The agreement is quite well, even in the non-Markovian regime (Fig.~\ref{fig:g2 NM}). Because evaluating Eq.~\eqref{eq:formal solution of two-photon wavefunction} requires the full history of $\psi$, it is clear the program is valid for all regions in the spacetime.
+More results generated by our FDTD program are discussed in Ref.~\cite{FangNM17}. 
+
+\section{Availability}
+\subsection{Operating system}
+Any modern OS that has C compilers supporting the C99 standard installed. This program has been tested on Linux + GCC and Mac OS X + Clang/LLVM.
+
+\subsection{Programming language}
+The FDTD code is written in C and conforms the C99 standard. Pre- and post-processing utility scripts are written in Python and \textit{Mathematica}.
+ 
+\subsection{Additional system requirements}
+As discussed earlier, depending on the input parameters the memory and disk usages of the program can be excessive, so the users should choose the parameters wisely.
+
+\subsection{Dependencies}
+None.
+
+\subsection{List of contributors}
+Yao-Lung Leo Fang (developer)
+
+\subsection{Software location}
+\subsubsection{Archive}
+\begin{enumerate}
+	\item Name: Zenodo
+	\item Persistent identifier: \url{https://doi.org/10.5281/zenodo.829809}
+	\item Licence: WTFPL
+	\item Publisher: Yao-Lung Leo Fang
+	\item Version published: v1.0.0
+	\item Date published: July 15, 2017
+\end{enumerate}
+
+\subsubsection{Code repository}
+\begin{enumerate}
+	\item Name: GitHub
+	\item Persistent identifier: \url{https://github.com/leofang/FDTD.git}
+	\item Licence: WTFPL
+	\item Date published: July 14, 2017
+\end{enumerate}
+
+\subsection{Language}
+English.
+
+\section{Reuse potential}
+The program provides a numerically exact, time-dependent solution to the problem of a single 2LS placed in front of a mirror scattered by either a one-photon or two-photon initial state, so for waveguide-QED researchers this program can be very useful for solving the two classes of problems as discussed earlier. Arbitrary wavepackets or other forms of initial condition can be incorporated into the code with minor modification. 
+
+More flexibility, such as coupling arbitrary number of 2LS to the waveguide, can be gained by re-implementing this program in an OO language (C++, Python, etc). In fact, the code has been written in the OO-style by (i) compacting all relevant fields into a C struct (roughly equivalent to a C++/Python class) named \texttt{grid}, (ii) passing ``this'' pointer to a \texttt{grid} instance when calling functions, as if they were member functions of the \texttt{grid} class, and (iii) following RAII. As a result, rewriting in C++, for example, should be of minimal work. Of course, the grid layout must be carefully designed in such a scenario to minimize memory usage. Currently the program is single-threaded; a multi-thread implementation is quite challenging in our opinion, as thread competitions for marching the wavefunction could bring in significant overhead.
+
+Finally, this program serves as a proof of concept for mathematicians, scientists and engineers who are interested in solving complicated delay PDE using FDTD. For development discussions, please either open an issue on GitHub or contact the authors. Users and developers who are benefited from this program are strongly encouraged to cite both this paper as well as Ref.~\cite{FangNM17}.
+
+\subsection{Acknowledgments}
+%\subsection{Funding statement}
+	We acknowledge financial support from U.S.\ NSF (Grant No. PHY-14-04125) and fruitful discussion with Harold U.\ Baranger and Francesco Ciccarello.
+
+\subsection{Competing interests}
+The authors declare that they have no competing interests.
+
+
+%\newpage
+%\appendix
+\begin{appendices}
+%\section{Input parameters}
+%\label{append: input}
+\section{Stability analysis}
+\label{appen: stability}
+Following Ref.~\cite{NumericalRecipes}, we can perform a simple von Neumann stability analysis to check that our regularization scheme does not lead to amplitude divergence. First, let us consider the simplest ordinary PDE $\partial_x f+\partial_t f+W f(x,t)=0$ [compared with Eq.~\eqref{eq:double-excitation delay differential eq}, $W=\left(i\omega_0+\frac{\Gamma}{2}\right)$]. If we write $\psi(m\Delta, n\Delta)=\xi^n e^{ik(m\Delta)}$, where $\xi$ is called the amplification factor, then we have 
+\begin{equation}
+	\xi(k) = \frac{\left(\frac{1}{\Delta}-\frac{W}{4}\right)-\frac{W}{4}e^{ik\Delta}}{\left(\frac{1}{\Delta}+\frac{W}{4}\right)+\frac{W}{4}e^{-ik\Delta}}e^{-ik\Delta}.
+\end{equation}
+It can be shown that $|\xi(k)|\leq 1$ as long as $\re(W)>0$, so our approach for solving this simple PDE is stable.
+
+For Eq.~\eqref{eq:double-excitation delay differential eq} in $x<-a$, we can again insert the ansatz and obtain
+(assuming $\chi=0$ for simplicity)
+\begin{align}
+	\left(\frac{1}{\Delta}+\frac{W}{4}\right)\xi^n e^{ikm\Delta}
+	&=	\left(\frac{1}{\Delta}-\frac{W}{4}\right)\xi^{n-1} e^{ik(m-1)\Delta}
+	-\frac{W}{4}\left(\xi^{n-1}e^{ikm\Delta}+\xi^{n}e^{ik(m-1)\Delta}\right)\nonumber\\
+	&\quad+\frac{\Gamma}{8}\xi^{n-n_x-1}e^{ik(m-n_x-1)\Delta}\left(1+e^{ik\Delta}+\xi+\xi e^{ik\Delta}\right).
+\end{align}
+Note that the parameter $n_x$ enters because of the delay term. Now this is a polynomial in $\xi$ of order $n_x$, so there is no general solution for its roots. But empirically (i.e. by plotting) we still find that $|\xi(k)|\leq 1$; that is, our algorithm is stable in $x<-a$.
+
+A more general stability analysis for Eq.~\eqref{eq:double-excitation delay differential eq} is challenging. However, we hope the above reasoning together with the validations discussed earlier are enough to convince the interested users that our FDTD program is stable. 
+
+
+
+\section{Conversions between physical quantities and simulation parameters} 
+\label{appen: translation}
+In the scattering problem, the three important parameters are $\mathcal{K}$ ($=k/\Gamma$), $\mathcal{W}$ ($=\omega_0/\Gamma$) and $n$ ($=k_0a/\pi$). To satisfy the rotating-wave approximation $\mathcal{W}\gg1$ is required, but how large $\mathcal{W}$ is should not matter. Once they are determined, the physics is determined. Here we describe how to express physical quantities in terms of $\Delta$, $n_x$, $\mathcal{K}$, $\mathcal{W}$ and $n$:
+\begin{align}
+	k&=\frac{2n\pi\mathcal{K}}{n_x\mathcal{W}}\times\frac{1}{\Delta}\\
+	\omega_0&=\frac{2n\pi}{n_x}\times\frac{1}{\Delta}\\
+	\Gamma&=\frac{2n\pi}{n_x\mathcal{W}}\times\frac{1}{\Delta}\\
+	\lambda_0&=\frac{n_x}{n}\times\Delta \label{eq: true step size}
+\end{align}
+A Python script is used to prepare the input parameters using the above relations. 
+
+We remark the role of $\Delta$, which represents both length and time in dimensional analysis (recall $c=1$). Thus, we have a degree of freedom (dof) to choose its value without affecting the physics, as if we were changing the length unit. We emphasize this notion because 
+there is in fact a deeper reason for having this dof: Eq.~\eqref{eq:double-excitation delay differential eq} is a wave equation, and thus \textit{scale invariant} \cite{PhotonicCrystalBook}. It is well-known that FDTD is quite suitable for scale-invariant problems, and the step size $\Delta$ is just a conceptual quantity for proper discretization and is irrelevant of the physics. 
+What matters is the dimensionless quantities such as $(\omega_0\Delta)$ and $(\Gamma\Delta)$, not $\Delta$ itself. 
+
+The current implementation is not yet strictly scale invariant --- we still explicitly keep $\Delta$ as a mandatory parameter, whose value does not affect the result (providing rounding errors are negligible), but it is not necessary if the code is designed in a different way. What really controls the (relative) step size, and therefore the error, is the ratio of $n_x/n$; see Eq.~\eqref{eq: true step size}. As a result, we need $n_x\gg n$ to have many steps per wavelength. Empirically we find $\Delta/\lambda_0\leq1/100$ is preferable.
+
+
+\section{Evaluating incomplete Gamma functions on the complex plane}
+\label{appen: incom_gamma}
+In the present work, the incomplete Gamma function $\gamma(n,z)$ naturally emerges from our equations. While there are several open-sourced math libraries such as GSL and Boost that implement the real-valued version, evaluating $\gamma(n,z)$ for complex-valued argument $z$ is a very tricky task and to our knowledge no open-sourced code provides such an implementation. Commercial softwares like Mathematica does provide a routine for arbitrary arguments, but its efficiency is nonideal for simulation purposes. As a by-product, therefore, we provide an implementation of the incomplete Gamma function for nonzero positive integers $n=1, 2, \cdots$, and complex-valued $z$.
+
+\begin{figure}[htbp]%[!htbp]
+	\centering
+	\includegraphics[trim=2cm 2.2cm 2cm 2.2cm, clip=true, scale=0.7]{incomplete_Gamma_strategy}
+	\caption{Evaluating $P(n,z)$ for complex-valued $z$. Depending on $|z|$, we use different formulae, labeled from (a) to (d), to achieve fast and accurate convergence. Note that (c) and (d) are employed when $\re(z)<0$ and $|\im(z)|\lesssim10^{-16}$.}
+	\label{fig:incomplete Gamma}
+\end{figure}
+
+Specifically, we implement the normalized lower incomplete Gamma function \cite{NISThandbook}
+\begin{equation}
+	P(n, z) = \frac{\gamma(n, z)}{\Gamma(n)}=\frac{\gamma(n,z)}{(n-1)!}.
+\end{equation}
+Other members in the incomplete-Gamma family can be easily obtained if $P(n,z)$ is known. 
+The most challenging part is when $z$ is on the negative real axis. Fortunately, this problem is recently tackled in Ref.~\cite{GilACM17}, and we incorporate their findings into our implementation, which works well even when $z$ has a tiny, nonzero imaginary part. Our implementation is summarized in Fig.~\ref{fig:incomplete Gamma}. We evaluate $P(n,z)$ according to four different expressions for $z$ in different regions on the complex plane:
+\begin{enumerate}
+	\item[(a)] Continuous fraction; see Eq.~(6.2.7) in Ref.~\cite{NumericalRecipes}:
+	\begin{equation}
+		Q(n, z) = 1-P(n, z) = \frac{e^{-z}z^n}{\Gamma(n)}\left(\frac{1}{z+1-n-}\,\frac{1\cdot(1-n)}{z+3-n-}\,
+		\frac{2\cdot(2-n)}{z+5-n-}\cdots\right);
+	\end{equation}
+	\item[(b)] Series expansion; see Eq.~(6.2.5) in Ref.~\cite{NumericalRecipes}:
+	\begin{equation}
+		P(n, z) = e^{-z} z^n \sum_{i=0}^\infty \frac{z^i}{\Gamma(n+i+1)};
+	\end{equation}
+	\item[(c)] Series expansion for $\gamma^*$; see Eq.~(6) in Ref.~\cite{GilACM17}:
+	\begin{equation}
+     P(n, -z) = (-z)^n \gamma^*(n, -z)\sim \frac{(-1)^n e^z}{\Gamma(n)} \sum_{i=0}^\infty (1-n)_i z^{n-i-1};
+	\end{equation}
+	\item[(d)] Poincar\'{e}-type expansion; see Eq.~(29) in Ref.~\cite{GilACM17}:
+	\begin{equation}
+	P(n, z) = z^n \gamma^*(n, z) = \frac{z^n}{\Gamma(n)} \sum_{i=0}^\infty \frac{(-z)^i}{i!(i+n)}.
+	\end{equation}
+\end{enumerate}
+We note that combining (a) and (b) gives the standard approach to real-valued $z$ \cite{NumericalRecipes}, and that for very large $|z|$ the computation may not converge \cite{GilACM17}, but the convergence range is large enough for our purposes. 
+
+
+%\section{The role of $A$}
+%\label{appen: A}
+%This Appendix is irrelevant of the program and merely serves as a side note for those who are concerned with the interpretation of the prefactor $A$ appearing whenever a continues driving is used. We choose to place this discussion in the present documentation because it is a minor issue.
+%
+%For example, if $f(x) = A e^{ikx}\theta(-x)$ (see top of Fig.~\ref{fig:square pulse}), it is not normalized to 1 if we require it to have a probability interpretation:
+%\begin{equation}
+%\int_{-\infty}^{\infty} |f(x)|^2 dx = \int_{-\infty}^{0} A^2 dx \neq 1
+%\end{equation}
+%In fact it is delta-normalized. In scattering theory it is fine to have a delta-normalized state, but strictly speaking quantum-mechanical wavefunctions should have a probability interpretation, and thus should be 1-normalized.
+%
+%\begin{figure}[hbt!]
+%	\centering
+%	\includegraphics[scale=0.5, trim=0 1.9cm 2.5cm 0, clip=true]{square_pulse}
+%	\caption{(Top) a continuous wave with a sharply defined wavefront; (bottom) a square pulse with length $L$.}
+%	\label{fig:square pulse}
+%\end{figure}
+%
+%The solution is to recognize that the probability interpretation requires a well-defined wavepacket, so actually what we have been doing all along is using a long square pulse (bottom of Fig.~\ref{fig:square pulse}) and \textit{then} taking the infinite-length limit ($L\rightarrow\infty$). So formally $f(x) = A e^{ikx}\theta(x+L)\theta(-x)$ with $A=1/\sqrt{L}$. It is obvious that $\int |f|^2 dx=1$ now.
+%
+%This discussion lends us an important lecture when interpreting the results. For example, the infinite sum such as Eq.~\eqref{eq:exact solution single-photon scattering} is still a valid solution, under the condition that no matter what termination time $T$ we use in the simulation, $L$ is always much larger than  $T$ so that the solution does not know there is a ``wave-end.'' But $|e(t)|^2$ calculated in such scenarios can no longer be interpreted as the population of the 2LS. Same as $e(k)$ from scattering theory \cite{FangPRA15}, $e(t)$ is the slope of $\langle \sigma_-(t)\rangle$ to the driving amplitude $A$ in the weak-driving limit \cite{FangPRA15}. The consequence of taking the $L\rightarrow\infty$ limit is that the 2LS is just weakly excited at all time (weak in the sense that the population is proportional to driving amplitude squared). In this aspect, one can regard what we have calculated as a ``time-dependent scattering theory.''
+
+\section{Non-Markovian measures}
+\label{append: NM}
+In this Appendix we illustrate the computation of the non-Markovian (NM) geometric measure \cite{LorenzoPRA13} quantifying the single-photon scattering process in this system. Specifically, we consider initially the waveguide has a single-photon exponential wavepacket of the form Eq.~\eqref{eq:single-photon exponential wavepacket}, and calculate two functions, $\mu(t)$ and $\lambda(t)$,\textsuperscript{\ref{note5}} for constructing the geometric measure. The detailed discussion is reported elsewhere \cite{FangNM17}, and here we simply quote the results. The computation can be performed by setting an arbitrarily positive \texttt{alpha}, \texttt{init\_cond=2}, and \texttt{measure\_NM=1} in the input file.
+
+
+Denoting $\phi(x, t)$ as the photon wavefunction in the one-excitation sector, 
+%where
+%\begin{align}
+%\phi(x, t)&=\phi(x-t,0)-\sqrt{\frac{\Gamma}{2}}\left[e_0(t-x-a)\theta(x+a)\theta(t-x-a)
+%-e_0(t-x+a)\theta(x-a)\theta(t-x+a)\right], \label{eq:single-photon formal solution semi-infinite}\\
+%e_0(t)&=\frac{\sqrt{\alpha\Gamma^2/2} (e^{-(i\omega_0+\Gamma /2)t}-e^{-(ik+\alpha\Gamma/2)t})}{k-\omega_0+i\Gamma/2(1-\alpha)} 
+%\nonumber\\
+%&\quad-i\sqrt{\alpha\Gamma} \sum_{n=1}^{\infty}\frac{\left(\frac{\Gamma}{2}\right)^{n-1/2}}{n!}
+%\Bigl[(t-2na)^n e^{-(i\omega_0+\Gamma/2)(t-2na)}\nonumber\\
+%&\quad\quad+\frac{i^n(k-\omega_0-i\alpha\Gamma/2)}{\left[k-\omega_0+i\Gamma/2(1-\alpha)\right]^{n+1}}\gamma(n+1,-ip(t-2na))e^{-(ik+\alpha\Gamma/2)(t-2na)}
+%\Bigr]\theta(t-2na)\label{eq:exact solution single-photon exponential}
+%\end{align}
+%with $\phi(x,0)$ given by Eq.~\eqref{eq:single-photon exponential wavepacket} and $p=k-\omega_0+i\Gamma/2(1-\alpha)$. Note the similarity between Eq.~\eqref{eq:exact solution single-photon exponential} and Eq.~\eqref{eq:exact solution single-photon scattering}. 
+we can define a complex function $\mu(t)$ as
+\begin{equation}
+	\mu(t) \equiv \int_{-\infty}^{\infty}dx\, \phi^*(x, t) \psi(x, t). %= e^{-\alpha\Gamma t}e_1(t)+\int_{-a}^{\infty}dx\, \phi^*(x,t)\psi(x,t),
+	\label{eq:mu}
+\end{equation}
+%where $e_1(t)$ is given by Eq.~\eqref{eq:spontaneous emission solution}. 
+Similarly, we define a real function $\lambda(t)$ as
+\begin{equation}
+	\lambda(t) = \int_{-\infty}^{\infty}dx\, |\psi(x, t)|^2 - |e_0(t)|^2, %= \Bigl[e^{-\alpha\Gamma t} |e_1(t)|^2-|e_0(t)|^2\Bigr]+\int_{-a}^{\infty}dx\, |\psi(x,t)|^2.
+	\label{eq:lambda}
+\end{equation}
+where $e_0(t)$ is given by the solution of single-photon scattering, Eq.~(S27) in Ref.~\cite{FangNM17}. %{\color{blue} (Leo: remember to add the equation number when finalizing!)}
+After calculating $\psi(x,t)$, the program will compute $\mu(t)$, $\lambda(t)$, $e_0(t)$ and $e_1(t)$ [Eq.~\eqref{eq:spontaneous emission solution}], and output the results as plain text. 
+The geometric measure is defined as \cite{LorenzoPRA13}
+\begin{equation}
+\mathcal{N}_\text{geo}=\int\limits_{\frac{d|\det M_t|}{dt}>0} \frac{d|\det M_t|}{dt}\,dt,
+\label{eq: geo measure}
+\end{equation}
+and elsewhere \cite{FangNM17} we show that for our system $\det M_t = |\mu(t)|^2 \lambda(t)$. 
+%Similarly, the BLP measure \cite{BreuerPRL09} for our system is
+%\begin{equation}
+%\mathcal{N}_\text{BLP}=\text{max}_{\theta\in[0,\pi/2]}\int\limits_{\frac{d \mathcal{D}_\theta(t)}{dt}>0} \frac{d \mathcal{D}_\theta(t)}{dt}\,dt,
+%\label{eq: BLP measure}
+%\end{equation}
+%where $\mathcal{D}_\theta(t)=\sqrt{\lambda(t)^2\sin^2\theta+|\mu(t)|^2\cos^2\theta}$. 
+Therefore, once the two functions $\lambda(t)$ and $\mu(t)$ are known, the geometric measure can be calculated easily.\footnote{$\lambda(t)$ and $\mu(t)$ can also be used to construct other NM measures; detail in progress will be reported elsewhere.}
+
+
+\begin{figure}[!hbtp]
+	\centering
+	\includegraphics[scale=0.5]{file_process_schematic}
+	\caption{Spacetime layout of the FDTD output files. Information for $x<-a$ is not written to the disk in order to reduce the file size. During post processing, one can load data for every 100 steps into memory (blue strips). The red dashed line represents the light cone extended from the second 2LS at $x=+a$, and the time at which it intersects with the box boundary is denoted $t=T_\text{max}\Delta$.}
+	\label{fig: file processing}
+\end{figure}
+
+For users interested in computing the two functions themselves, we note that the spatial integrals in Eqs.~\eqref{eq:mu} and \eqref{eq:lambda} need some care, which is explained in the rest of this section. 
+(In our code they are computed according to the trapezoidal rule.)
+%As we compute on a finite grid, a upper bound for the integral must be supplied. In the present context, the upper bound comes from either the second light cone that extends from $(x,t)=(+a, 0)$, or from the termination time \texttt{Ny}.
+One of the issues for numerically computing these integrals is that the amount of data generated by the FDTD program can be huge, as previously explained. Depending on the number of grid points, it can be easily over tens of GB and more. It is certainly inconvenient to write this much of data into a file and subsequently load it into the memory for post processing.
+
+
+We suggest a manageable way to reduce the disk and memory usages. First, note that the analytical solution in $x<-a$ is known, so do not write data in this region into files. The resulting data layout is shown in Fig.~\ref{fig: file processing}. Doing this will cut half of the disk usage (compare Fig.~\ref{fig: file processing} with Fig.~\ref{fig:FDTD_schematic}). Next, depending on the system time scale, one can selectively load data for every, say, 100 steps (blue strips in Fig.~\ref{fig: file processing}; set \texttt{Tstep=99}). This will significantly reduce the memory usage. One can keep loading data into the memory until reaching $t=(N_y-1)\Delta$, the max simulation time in FDTD, but for the purpose of calculating the integrals, one may only use data up to $t=T_\text{max}\Delta$, where
+\begin{equation}
+T_\text{max}=\min(N_y-1, N_x-n_x/2).
+\end{equation}
+The reason is that the time $T_\text{max}\Delta$ is where the second light cone intersects with the box boundary. If data beyond this limit is used, the wavefront will go outside of the box and the integrals would be underestimated. Thus, instead of positive infinity, numerically the upper bound for those integrals should be the $x$-coordinate that intersects with $t=T_\text{max}\Delta$ at the 2nd light cone.
+Finally, we note that \texttt{Tstep} should be wisely chosen so that after interpolation the output data can faithfully represent the result.
+\end{appendices}
+
+\bibliographystyle{jors-harvard} % Harvard style for JORS
+\bibliography{WQED_2016}
+
+\end{document}
