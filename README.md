@@ -34,7 +34,7 @@ For futher details (e.g., the layout of the grid, decriptions for various parame
 
 Currently two kinds of initial conditions are built in: two-photon plane wave (set `init_cond=1`) and single-photon exponential wavepacket (`init_cond=2`). For the latter, the (dimensionless) wavepacket width `alpha` needs to be specified. Other kinds of initial conditions can be incorperated into the code easily.
 
-For the ease of post-processing data, several functions for constructing various non-Markovian measures can be calculated on the fly if `measure_NM=1` is set. See the ![documentation](doc/FDTD_JORS_style.pdf) for detail. Note that currently in this situation only the single-photon exponential wavepacket is supported (so remember to set `init_cond=2` and `alpha`).
+For the ease of post-processing data, several functions for constructing various non-Markovian measures can be calculated on the fly if `measure_NM=1` is set. See the [documentation](doc/FDTD_JORS_style.pdf) for detail. Note that currently in this situation only the single-photon exponential wavepacket is supported (so remember to set `init_cond=2` and `alpha`).
 
 Other options controlling the behavior of the program can also be given; if not given, the program assumes a default value. Currently all available options are `save_psi` (default=0), `save_psi_binary` (default=0), `save_chi` (default=0), `init_cond` (default=0: invalid), `Tstep` (default=0), and `measure_NM` (default=0).
 
@@ -45,12 +45,12 @@ Depending on the options, the following files will be generated:
 * `save_psi`: `input_filename.re.out` and `input_filename.im.out` (real and imaginary parts, respectively, of the wavefunction described by the delay PDE). 
 * `save_psi_binary`: `input_filename.bin` (the entire wavefunction, complex numbers, written in a binary file).
 * `save_chi`: `input_filename.abs_chi.out` (absolute value of the two-photon wavefunction).
-* `measure_NM`: `input_filename.re_e0.out`, `input_filename.re_e1.out`, `input_filename.re_mu.out`, their imaginary counterparts, and `input_filename.lambda.out`; see the ![documentation](doc/FDTD_JORS_style.pdf) for their meanings.
+* `measure_NM`: `input_filename.re_e0.out`, `input_filename.re_e1.out`, `input_filename.re_mu.out`, their imaginary counterparts, and `input_filename.lambda.out`; see the [documentation](doc/FDTD_JORS_style.pdf) for their meanings.
 
 Note that (i) these options cannot be simultaneously turned off, or the program would generate nothing; (ii) for the wavefunctions, each row in the output file gives the wavefunction along the x-direction starting from x=-a, and rows are written in the order t=0, t=Tstep+1, t=2(Tstep+1), ...
 
-A Mathematica notebook is provided in the `utilities` folder for simple plotting purposes. As a validation, sample animations are shown below to demonstrate that in the long-time limit the code apporaches the known results: ![](doc/g2_k0a_0.25pi_on.gif) ![](g2_k0a_0.25pi_off_-1Gamma.gif)
-![](g2_k0a_0.5pi_on.gif) ![](g2_k0a_0.5pi_off_-1Gamma.gif)
+A Mathematica notebook is provided in the `utilities` folder for simple plotting purposes. As a validation, sample animations are shown below to demonstrate that in the long-time limit the code apporaches the known results: ![](doc/g2_k0a_0.25pi_on.gif) ![](doc/g2_k0a_0.25pi_off_-1Gamma.gif)
+![](doc/g2_k0a_0.5pi_on.gif) ![](doc/g2_k0a_0.5pi_off_-1Gamma.gif)
 
 ## License
 This code is released under the [WTFPL v2](http://www.wtfpl.net). For the academic uses, citation to **(ref)** is *strongly encouraged and acknowledged.* 
