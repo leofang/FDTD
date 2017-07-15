@@ -105,6 +105,9 @@ struct _grid
 typedef struct _grid grid;
 
 
+double complex plane_wave_BC(int j, int i, grid * simulation);
+double complex exponential_BC(int j, int i, grid * simulation);
+double complex two_exponential_BC(int j, int i, grid * simulation);
 void initial_condition(grid * simulation);
 void boundary_condition(grid * simulation);
 void initialize_psi(grid * simulation);
