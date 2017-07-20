@@ -55,7 +55,7 @@ A Mathematica notebook is provided in the `utilities` folder for simple plotting
 ![](doc/g2_k0a_0.5pi_on.gif) ![](doc/g2_k0a_0.5pi_off_-1Gamma.gif)
 
 ## License
-This code is released under the [WTFPL v2](http://www.wtfpl.net). For the academic uses, citation to **(ref)** is *strongly encouraged and acknowledged.* 
+This code is released under the [WTFPL v2](http://www.wtfpl.net). For the academic uses, *citation to **[arXiv:1707.05943](https://arxiv.org/abs/1707.05943)** and **[arXiv:1707.05946](https://arxiv.org/abs/1707.05946)** is strongly encouraged and acknowledged.* 
 
 Copyright (C) 2016 Leo Fang.
 
