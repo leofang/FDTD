@@ -20,15 +20,16 @@ A makefile is provided. After cloning the git repo or downloading the source cod
 At least 8 are required: `nx`, `Nx`, `Ny`, `Delta`, `init_cond`, `k`, `w0`, and `gamma`. The first four are simulation-related, and the rest are physics-related. The format of the input file should be one key-value pair per line, with a equal sign separating the key and the value (see the sample file `k0a_0.5pi_on_new`):
 ```bash
 nx=200
-Nx=10000
-Ny=20000
-Delta=0.0100000000
-init_cond=1
-k=1.5707963268
-w0=1.5707963268
-gamma=0.0785398163
-save_psi=0
+Nx=4000
+Ny=10000
+Delta=0.01
+k=1.57079632679490
+w0=1.57079632679490
+gamma=0.0785398163397448
+save_psi=1
 save_chi=1
+init_cond=1
+Tstep=19
 ```
 For futher details (e.g., the layout of the grid, decriptions for various parameters, etc) see the comments in `grid.h` as well as the [documentation](doc/FDTD_JORS_style.pdf). A Python script is provided in the `utilities` folder for the ease of preparing input.
 
