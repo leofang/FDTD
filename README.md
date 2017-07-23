@@ -17,7 +17,7 @@ A makefile is provided. After cloning the git repo or downloading the source cod
 `./FDTD input_filename`, where `input_filename` is the name of the input file that specifies the input parameters, each in one line (see below).
 
 ## Input parameters
-At least 8 are required: `nx`, `Nx`, `Ny`, `Delta`, `init_cond`, `k`, `w0`, and `gamma`. The first four are simulation-related, and the rest are physics-related. The format of the input file should be one key-value pair per line, with a equal sign separating the key and the value (see the sample file `k0a_0.5pi_on_new`):
+At least 8 are required: `nx`, `Nx`, `Ny`, `Delta`, `init_cond`, `k`, `w0`, and `gamma`. The first four are simulation-related, and the rest are physics-related. The format of the input file should be one key-value pair per line, with a equal sign separating the key and the value (see the sample file [`k0a_0.5pi_on_new`](k0a_0.5pi_on_new)):
 ```bash
 nx=200
 Nx=4000
@@ -31,11 +31,11 @@ save_chi=1
 init_cond=1
 Tstep=19
 ```
-For futher details (e.g., the layout of the grid, decriptions for various parameters, etc) see the comments in `grid.h` as well as the [documentation](doc/FDTD_JORS_style.pdf). A Python script is provided in the `utilities` folder for the ease of preparing input.
+For futher details (e.g., the layout of the grid, decriptions for various parameters, etc) see the comments in [`grid.h`](grid.h) as well as the [documentation](doc/FDTD_JORS_style.pdf). A Python script is provided in the `utilities` folder for the ease of preparing input.
 
-Currently two kinds of initial conditions are built in: two-photon plane wave (set `init_cond=1`) and single-photon exponential wavepacket (`init_cond=2`). For the latter, the (dimensionless) wavepacket width `alpha` needs to be specified. Other kinds of initial conditions can be incorperated into the code easily.
+Currently two kinds of initial conditions are built in: **two-photon plane wave** (set `init_cond=1`) and **single-photon exponential wavepacket** (`init_cond=2`). For the latter, the (dimensionless) wavepacket width `alpha` needs to be specified. Other kinds of initial conditions can be incorperated into the code easily.
 
-For the ease of post-processing data, several functions for constructing various non-Markovian measures can be calculated on the fly if `measure_NM=1` is set. See the [documentation](doc/FDTD_JORS_style.pdf) for detail. Note that currently in this situation only the single-photon exponential wavepacket is supported (so remember to set `init_cond=2` and `alpha`).
+For the ease of post-processing data, several functions for constructing various non-Markovian measures can be calculated on the fly if `measure_NM=1` is set; see the [documentation](doc/FDTD_JORS_style.pdf) for detail. Note that currently in this situation *only the single-photon exponential wavepacket is supported* (so remember to set `init_cond=2` and `alpha`).
 
 Other options controlling the behavior of the program can also be given; if not given, the program assumes a default value. Currently all available options are `save_psi` (default=0), `save_psi_binary` (default=0), `save_chi` (default=0), `init_cond` (default=0: invalid), `Tstep` (default=0), and `measure_NM` (default=0).
 
@@ -48,7 +48,7 @@ Depending on the options, the following files will be generated:
 * `save_chi`: `input_filename.abs_chi.out` (absolute value of the two-photon wavefunction).
 * `measure_NM`: `input_filename.re_e0.out`, `input_filename.re_e1.out`, `input_filename.re_mu.out`, their imaginary counterparts, and `input_filename.lambda.out`; see the [documentation](doc/FDTD_JORS_style.pdf) for their meanings.
 
-Note that (i) these options cannot be simultaneously turned off, or the program would generate nothing; (ii) for the wavefunctions, each row in the output file gives the wavefunction along the x-direction starting from x=-a, and rows are written in the order t=0, t=Tstep+1, t=2(Tstep+1), ...
+Note that (i) these options cannot be simultaneously turned off, or the program would generate nothing; (ii) for the wavefunctions, each row in the output file gives the wavefunction along the x-direction starting from **x=-a**, and rows are written in the order t=0, t=Tstep+1, t=2(Tstep+1), ...
 
 A Mathematica notebook is provided in the `utilities` folder for simple plotting purposes. As a validation, sample animations are shown below to demonstrate that in the long-time limit the code apporaches the known results (see the [documentation](doc/FDTD_JORS_style.pdf) for detail).
 
