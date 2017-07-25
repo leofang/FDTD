@@ -1,9 +1,0 @@
-   nx  = 4
-Nx = 8
-Ny = 2048
-Delta = 0.01
-k = 1.98    
-w0 = 2.0
-gamma = 1.0
-save_psi=1
-init_cond=1
