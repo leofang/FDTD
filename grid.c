@@ -342,12 +342,12 @@ void sanity_check(grid * simulation)
         exit(EXIT_FAILURE);
     }
 
-    //if Ny is too small then no result will be written to file
-    if(simulation->save_chi && (simulation->Ny <= simulation->Nx + simulation->nx/2))
-    {
-        fprintf(stderr, "%s: Ny needs to be larger than Nx+nx/2, or \"chi\" will not be stored. Abort!\n", __func__);
-        exit(EXIT_FAILURE);
-    }
+    ////if Ny is too small then no result will be written to file
+    //if(simulation->save_chi && (simulation->Ny <= simulation->Nx + simulation->nx/2))
+    //{
+    //    fprintf(stderr, "%s: Ny needs to be larger than Nx+nx/2, or \"chi\" will not be stored. Abort!\n", __func__);
+    //    exit(EXIT_FAILURE);
+    //}
 
     //check if the initial condition is not correctly given
     //currently the allowed values are:
