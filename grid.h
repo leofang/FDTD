@@ -93,6 +93,7 @@ struct _grid
    //program options
    int save_chi;          //whether or not to save the two-photon wavefunction to file (default: no)
    int save_psi;          //whether or not to save the wavefunction to file (default: no)
+   int save_psi_square_integral; //whether or not to save \int dx |psi(x,t)|^2 to file (default: no)
    int save_psi_binary;   //whether or not to save the wavefunction to binary file (default: no)
    int init_cond;         //the initial condition of the wavefunction (default: unspecified)
    int identical_photons; //whether or not the two photons are identical (default: yes; only effective for init_cond=3)
@@ -104,7 +105,9 @@ struct _grid
 };
 typedef struct _grid grid;
 
-
+double complex plane_wave_BC(int j, int i, grid * simulation);
+double complex exponential_BC(int j, int i, grid * simulation);
+double complex two_exponential_BC(int j, int i, grid * simulation);
 void initial_condition(grid * simulation);
 void boundary_condition(grid * simulation);
 void initialize_psi(grid * simulation);

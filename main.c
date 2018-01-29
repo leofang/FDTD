@@ -124,6 +124,8 @@ int main(int argc, char **argv)
       save_psi(simulation, argv[1], cimag);
       //save_psi(simulation, argv[1], cabs);
    }
+   if(simulation->save_psi_square_integral) //for testing init_cond=3
+      save_psi_square_integral(simulation, argv[1]); 
    if(simulation->save_psi_binary)
       save_psi_binary(simulation, argv[1]);
    if(simulation->save_chi)
