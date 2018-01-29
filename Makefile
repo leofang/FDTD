@@ -6,6 +6,8 @@
 # published by Sam Hocevar. See the accompanying LICENSE file or
 # http://www.wtfpl.net/ for more details.
 
+CC=gcc-5
+OpenMP=
 CFLAGS=-Wall -std=gnu99 -pedantic -O3 #-ggdb3 -Werror
 SRCS=$(wildcard *.c)
 OBJS=$(patsubst %.c, %.o, $(SRCS))
@@ -13,10 +15,10 @@ PROGRAM=FDTD
 LDFLAGS=-lm
 
 $(PROGRAM): $(OBJS)
-	gcc $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
+	$(CC) $(CFLAGS) $(OpenMP) -o $@ $(OBJS) $(LDFLAGS)
 
 %.o: %.c 
-	gcc -c $(CFLAGS) $<
+	$(CC) -c $(CFLAGS) $(OpenMP) $<
 
 clean:
 	rm -f $(OBJS) $(PROGRAM) *~

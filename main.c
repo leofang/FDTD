@@ -9,10 +9,14 @@
  */
 
 #include <math.h>
+#include <time.h>
 #include "grid.h"
 #include "kv.h"
 #include "dynamics.h"
 #include "NM_measure.h"
+#ifdef _OPENMP
+   #include <omp.h>
+#endif
  
 
 int main(int argc, char **argv)
@@ -26,26 +30,77 @@ int main(int argc, char **argv)
    printf("FDTD: solving 1+1D delay PDE\n");
    printf("This code is released under the WTFPL without any warranty.\n");
    printf("See LICENSE or http://www.wtfpl.net/ for more details.\n");
-   printf("Copyright (C) 2016 Leo Fang\n\n");
-   //printf("For the academic uses, citation to (ref) is strongly encouraged but not required.\n");
+   printf("Copyright (C) 2018 Leo Fang\n\n");
+
+   #ifdef _OPENMP
+      printf("FDTD: the executable is compiled with OpenMP, thus it runs parallely with %i threads...\n", omp_get_max_threads());
+   #else
+      printf("FDTD: the executable is compiled without OpenMP, thus it runs serially...\n");
+   #endif
    
    printf("FDTD: preparing the grid...\n");
    grid * simulation = initialize_grid(argv[1]);
 //   printf("\033[F\033[2KFDTD: preparing the grid...Done!\n");
    printf("FDTD: simulation starts...\n");// fflush(stdout);
 
-   // W = (i*w0+Gamma/2)
+   // W defined in grid.h
    W = simulation->w0*I+0.5*simulation->Gamma;
+
+   //grid dimension in x
+   int xmin = simulation->nx+1;   //start from x=-Nx*Delta
+   int xmax = simulation->Ntotal;
+
+   // initialize time measurement 
+   clock_t clock_start, clock_end;
+   clock_start = clock();
+   #ifdef _OPENMP
+      double omp_start = omp_get_wtime();
+      int xmax_step = xmax + simulation->nx * (omp_get_max_threads()-1);
+   #else
+      int xmax_step = xmax;
+   #endif
 
    //simulation starts
    for(int j=1; j<simulation->Ny; j++) //start from t=1*Delta
    {
-       for(int i=simulation->nx+1; i<simulation->Ntotal; i++) //start from x=-Nx*Delta
+       for(int i=xmin; i<xmax_step; i++) //start from x=-Nx*Delta
        {
-	   solver(j, i, simulation);
+           #pragma omp parallel
+	   {
+               #ifdef _OPENMP
+                   int temp = i - omp_get_thread_num() * simulation->nx;
+	       #else
+	           int temp = i;
+               #endif
+
+	       //march each thread within range one step in x simultaneously
+	       if(temp>=xmin && temp<xmax)
+	       {
+	          solver(j, temp, simulation);
+		  //if(j==84)
+		  //   printf("#%i: %i\n", omp_get_thread_num(), temp);
+	       }
+	       else
+	       {
+		  //if(j==84)
+		  //   printf("#%i: x\n", omp_get_thread_num());
+	       }
+	   }
+	   //if(j==84)
+	   //   printf("\n");
        }
+       //printf("%i-th loop ends\n", j);
    }
-   //printf("Done!\n");
+
+   // stop the timers
+   #ifdef _OPENMP
+      double omp_end = omp_get_wtime();
+      printf("FDTD: simulation ends, OpenMP time elapsd: %f s\n", omp_end - omp_start);
+   #endif
+   clock_end = clock();
+   double cpu_time_used = ((double) (clock_end - clock_start)) / CLOCKS_PER_SEC;
+   printf("FDTD: simulation ends, clock time elapsd: %f s\n", cpu_time_used);
+
 
 //   printf("FDTD: writing results to files...\n");// fflush(stdout);
 //   print_initial_condition(simulation);
