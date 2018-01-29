@@ -112,7 +112,7 @@ int main(int argc, char **argv)
    }
    //printf("Done!\n");
 
-   printf("FDTD: writing results to files...\n");// fflush(stdout);
+//   printf("FDTD: writing results to files...\n");// fflush(stdout);
 //   print_initial_condition(simulation);
 //   print_boundary_condition(simulation);
 //   printf("******************************************\n");
@@ -120,16 +120,26 @@ int main(int argc, char **argv)
 //   print_grid(simulation);
    if(simulation->save_psi)
    {
+      printf("FDTD: saving the wavefunction psi...\n");
       save_psi(simulation, argv[1], creal);
       save_psi(simulation, argv[1], cimag);
       //save_psi(simulation, argv[1], cabs);
    }
    if(simulation->save_psi_square_integral) //for testing init_cond=3
-      save_psi_square_integral(simulation, argv[1]); 
+   {
+      printf("FDTD: saving the psi^2 integral...\n");
+      save_psi_square_integral(simulation, argv[1]);
+   }
    if(simulation->save_psi_binary)
+   {
+      printf("FDTD: saving the wavefunction psi as binary...\n");
       save_psi_binary(simulation, argv[1]);
+   }
    if(simulation->save_chi)
+   {
+      printf("FDTD: saving absolute value of the two-photon wavefunction |chi|...\n");
       save_chi(simulation, argv[1], cabs);
+   }
    if(simulation->measure_NM)
    {
       printf("FDTD: calculating lambda and mu for NM measures...\n"); fflush(stdout);
