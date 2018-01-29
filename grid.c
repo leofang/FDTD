@@ -334,20 +334,21 @@ void sanity_check(grid * simulation)
     }
 
     //it is meaningless if one performs the computation without saving any result
-    if(!simulation->save_chi && !simulation->save_psi && !simulation->save_psi_binary && !simulation->measure_NM)
+    if(!simulation->save_chi && !simulation->save_psi && !simulation->save_psi_square_integral \
+       && !simulation->save_psi_binary && !simulation->measure_NM)
     {
         //fprintf(stderr, "%s: either save_chi or save_psi has to be 1. Abort!\n", __func__);
-        fprintf(stderr, "%s: need to specify the output options (available: save_chi, save_psi, save_psi_binary, measure_NM). \
-                        Abort!\n", __func__);
+        fprintf(stderr, "%s: need to specify the output options (available: save_chi, save_psi, save_psi_square_integral,\
+                         save_psi_binary, measure_NM). Abort!\n", __func__);
         exit(EXIT_FAILURE);
     }
 
-    //if Ny is too small then no result will be written to file
-    if(simulation->save_chi && (simulation->Ny <= simulation->Nx + simulation->nx/2))
-    {
-        fprintf(stderr, "%s: Ny needs to be larger than Nx+nx/2, or \"chi\" will not be stored. Abort!\n", __func__);
-        exit(EXIT_FAILURE);
-    }
+    ////if Ny is too small then no result will be written to file
+    //if(simulation->save_chi && (simulation->Ny <= simulation->Nx + simulation->nx/2))
+    //{
+    //    fprintf(stderr, "%s: Ny needs to be larger than Nx+nx/2, or \"chi\" will not be stored. Abort!\n", __func__);
+    //    exit(EXIT_FAILURE);
+    //}
 
     //check if the initial condition is not correctly given
     //currently the allowed values are:
@@ -503,6 +504,8 @@ grid * initialize_grid(const char * filename)
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_chi")) : 0); //default: off
    FDTDsimulation->save_psi      = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi") ? \
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi")) : 0); //default: off
+   FDTDsimulation->save_psi_square_integral = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi_square_integral") ? \
+		                atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi_square_integral")) : 0); //default: off
    FDTDsimulation->save_psi_binary = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi_binary") ? \
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi_binary")) : 0); //default: off
    FDTDsimulation->init_cond     = (lookupValue(FDTDsimulation->parameters_key_value_pair, "init_cond") ? \
