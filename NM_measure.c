@@ -107,7 +107,7 @@ double complex phi(int j, int i, grid * simulation)
       exit(EXIT_FAILURE);
    }
 
-   double complex Phi = one_photon_exponential(i-j, simulation);
+   double complex Phi = one_photon_exponential(i-simulation->origin_index-j, simulation->k, simulation->alpha, simulation);
 
    //convert the index to real position i=x/Delta
    i = i - simulation->minus_a_index - simulation->nx/2;
@@ -123,7 +123,6 @@ double complex phi(int j, int i, grid * simulation)
 
 
 //lambda(t) = \int dx |psi(x,t)|^2 - |e0(t)|^2
-//          = e^(-alpha*Gamma*t)|e1(t)|^2 + \int_{-a}^\infty dx |psi(x,t)|^2 - |e0(t)|^2
 double lambda(int j, grid * simulation)
 {
    if(j<0)
@@ -134,22 +133,7 @@ double lambda(int j, grid * simulation)
 
    if(j==0) return 1.0;
 
-   double sum = 0;
-   double Lambda = exp(-simulation->alpha*simulation->Gamma*j*simulation->Delta);
-
-   Lambda *= pow(cabs(simulation->e1[j]), 2.0);
-   Lambda -= pow(cabs(simulation->e0[j]), 2.0);
-
-   int xmax = j + simulation->plus_a_index;
-   //trapezoidal rule
-   sum += 0.5 * pow(cabs(simulation->psi[j][simulation->minus_a_index]), 2.0);
-   for(int i = simulation->minus_a_index+1; i<xmax; i++)
-      sum += pow(cabs(simulation->psi[j][i]), 2.0);
-   sum += 0.5 * pow(cabs(simulation->psi[j][xmax]), 2.0);
-   
-   Lambda += simulation->Delta * sum;
-
-   return Lambda;  
+   return psi_square_integral(j, simulation) - pow(cabs(simulation->e0[j]), 2.0);
 }
 
 

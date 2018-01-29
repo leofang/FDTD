@@ -17,7 +17,25 @@
 #include "NM_measure.h"
 
 
-// This function returns the solution psi[j][i] in x<-a subject to incident plane wave
+//This function returns the normalization constant A for the two-photon initial state used for init_cond=3
+void calculate_normalization_const(grid * simulation)
+{
+   if(simulation->identical_photons) //skip the math 
+      simulation->A = 1./sqrt(2.); 
+   else
+   {
+      double k1 = simulation->k1 / simulation->Gamma;
+      double k2 = simulation->k2 / simulation->Gamma;
+      double alpha1 = simulation->alpha1;
+      double alpha2 = simulation->alpha2;
+
+      simulation->A = sqrt( (4.*pow(k1-k2,2) + pow(alpha1+alpha2,2)) / \
+	                    (4.*pow(k1-k2,2) + (pow(alpha1,2) + 6.*alpha1*alpha2 + pow(alpha2,2))) );
+   }
+}
+
+
+// This function returns the solution psi[j][i] in x<-a subject to two-photon plane wave
 double complex plane_wave_BC(int j, int i, grid * simulation)
 {
     double x = (i-simulation->origin_index)*simulation->Delta; //check!!!
@@ -64,7 +82,25 @@ double complex plane_wave_BC(int j, int i, grid * simulation)
 // This function returns the solution psi[j][i] in x<-a subject to single-photon exponential wavepacket 
 double complex exponential_BC(int j, int i, grid * simulation)
 {
-   return simulation->e1[j] * one_photon_exponential(i-j, simulation); // psi(x,t) = psi(x-t, 0) * e(t)
+   // psi(x,t) = psi(x-t, 0) * e(t)
+   return simulation->e1[j] * one_photon_exponential(i-simulation->origin_index-j, simulation->k, simulation->alpha, simulation); 
+}
+
+
+// This function returns the solution psi[j][i] in x<-a subject to two-photon exponential wavepacket 
+double complex two_exponential_BC(int j, int i, grid * simulation)
+{
+   // psi(x,t) = [ \varphi^2(x-t, 0) * e0^1(t) + (1<->2) ]/\sqrt{2} when photon 1 != photon 2
+   if(simulation->identical_photons)
+      return sqrt(2.) * simulation->A * simulation->e0[j] \
+	     * one_photon_exponential(i-simulation->origin_index-j, simulation->k, simulation->alpha, simulation);
+   else	 
+   {
+      static double complex varphi_1, varphi_2; //TODO: make sure both are static
+      varphi_1 = one_photon_exponential(i-simulation->origin_index-j, simulation->k1, simulation->alpha1, simulation);
+      varphi_2 = one_photon_exponential(i-simulation->origin_index-j, simulation->k2, simulation->alpha2, simulation);
+      return (simulation->e0_1[j] * varphi_2 + simulation->e0_2[j] * varphi_1) * simulation->A / sqrt(2.); 
+   }
 }
 
 
@@ -72,7 +108,7 @@ double complex exponential_BC(int j, int i, grid * simulation)
 void prepare_qubit_wavefunction(grid * simulation)
 {
     //do this only if the exponential wavepacket is used
-    if(simulation->init_cond == 2)
+    if(simulation->init_cond == 2 || simulation->init_cond == 3)
     {
         initialize_e0(simulation);
         initialize_e1(simulation);
@@ -82,20 +118,44 @@ void prepare_qubit_wavefunction(grid * simulation)
 
 void initialize_e0(grid * simulation)
 {
-    simulation->e0 = calloc(simulation->Ny, sizeof(*simulation->e0));
-    if(!simulation->e0)
-    { 
-        fprintf(stderr, "%s: cannot allocate memory. Abort!\n", __func__);
-        exit(EXIT_FAILURE);
-    }
-
-    int progress = 0;
-    //for nonzero initial conditions
-    if(simulation->init_cond == 2) //single-photon exponential wavepacket
+    if(simulation->identical_photons) //one wavepacket or two identical exponential wavepackets
     {
+        simulation->e0 = calloc(simulation->Ny, sizeof(*simulation->e0));
+        if(!simulation->e0)
+        { 
+            fprintf(stderr, "%s: cannot allocate memory. Abort!\n", __func__);
+            exit(EXIT_FAILURE);
+        }
+
+        int progress = 0;
         for(int j=0; j<simulation->Ny; j++)
         {
             simulation->e0[j] = e0(j, simulation);
+
+            if(j%(simulation->Ny/10)==0)
+            {
+                printf("%s: %i%% prepared...\r", __func__, progress*10); fflush(stdout);
+                progress++;
+            }
+        }
+    }
+    else //two different exponential wavepackets
+    {
+        simulation->e0_1 = calloc(simulation->Ny, sizeof(*simulation->e0_1));
+        simulation->e0_2 = calloc(simulation->Ny, sizeof(*simulation->e0_2));
+        if(!simulation->e0_1 || !simulation->e0_2)
+        { 
+            fprintf(stderr, "%s: cannot allocate memory. Abort!\n", __func__);
+            exit(EXIT_FAILURE);
+        }
+
+        int progress = 0;
+        for(int j=0; j<simulation->Ny; j++)
+        {
+	    simulation->k = simulation->k1; simulation->alpha = simulation->alpha1;
+            simulation->e0_1[j] = e0(j, simulation);
+	    simulation->k = simulation->k2; simulation->alpha = simulation->alpha2;
+            simulation->e0_2[j] = e0(j, simulation);
 
             if(j%(simulation->Ny/10)==0)
             {
@@ -111,6 +171,7 @@ void initialize_e0(grid * simulation)
 }
 
 
+//e1 is the solution of spontaneous emission and is independent of incident wavepackets
 void initialize_e1(grid * simulation)
 {
     simulation->e1 = calloc(simulation->Ny, sizeof(*simulation->e1));
@@ -149,7 +210,7 @@ void initial_condition(grid * simulation)
     if(simulation->init_cond == 2) //single-photon exponential wavepacket
     {
        for(int i=0; i<simulation->psit0_size; i++)
-           simulation->psit0[i] = one_photon_exponential(i+simulation->nx+1, simulation);
+           simulation->psit0[i] = one_photon_exponential(i-simulation->Nx, simulation->k, simulation->alpha, simulation);
     }
     //TODO: add other I.C. here
 }
@@ -192,6 +253,11 @@ void boundary_condition(grid * simulation)
 	   case 2: { //single-photon exponential wavepacket
                  for(int i=0; i<simulation->psix0_x_size; i++)
                      simulation->psix0[j][i] = exponential_BC(j, i, simulation);
+	      }
+	      break;
+	   case 3: { //two-photon exponential wavepacket
+                 for(int i=0; i<simulation->psix0_x_size; i++)
+                     simulation->psix0[j][i] = two_exponential_BC(j, i, simulation);
 	      }
 	      break;
 	   default: { //bad input
@@ -268,40 +334,89 @@ void sanity_check(grid * simulation)
     }
 
     //it is meaningless if one performs the computation without saving any result
-    if(!simulation->save_chi && !simulation->save_psi && !simulation->save_psi_binary && !simulation->measure_NM)
+    if(!simulation->save_chi && !simulation->save_psi && !simulation->save_psi_square_integral \
+       && !simulation->save_psi_binary && !simulation->measure_NM)
     {
         //fprintf(stderr, "%s: either save_chi or save_psi has to be 1. Abort!\n", __func__);
-        fprintf(stderr, "%s: need to specify the output options (available: save_chi, save_psi, save_psi_binary, measure_NM). \
-                        Abort!\n", __func__);
+        fprintf(stderr, "%s: need to specify the output options (available: save_chi, save_psi, save_psi_square_integral,\
+                         save_psi_binary, measure_NM). Abort!\n", __func__);
         exit(EXIT_FAILURE);
     }
 
-    //if Ny is too small then no result will be written to file
-    if(simulation->save_chi && (simulation->Ny <= simulation->Nx + simulation->nx/2))
-    {
-        fprintf(stderr, "%s: Ny needs to be larger than Nx+nx/2, or \"chi\" will not be stored. Abort!\n", __func__);
-        exit(EXIT_FAILURE);
-    }
+    ////if Ny is too small then no result will be written to file
+    //if(simulation->save_chi && (simulation->Ny <= simulation->Nx + simulation->nx/2))
+    //{
+    //    fprintf(stderr, "%s: Ny needs to be larger than Nx+nx/2, or \"chi\" will not be stored. Abort!\n", __func__);
+    //    exit(EXIT_FAILURE);
+    //}
 
     //check if the initial condition is not correctly given
     //currently the allowed values are:
     //1 (two-photon plane wave)
     //2 (single-photon exponential wavepacket)
-    if(simulation->init_cond < 1 || simulation->init_cond > 2)
+    //3 (two-photon exponential wavepackets)
+    if(simulation->init_cond < 1 || simulation->init_cond > 3)
     {
-        fprintf(stderr, "%s: init_cond has to be 1 or 2. Abort!\n", __func__);
-        exit(EXIT_FAILURE);
-    }
-    else if(simulation->init_cond == 2 && !lookupValue(simulation->parameters_key_value_pair, "alpha"))
-    {//want to use exponential wavepacket but forget to set alpha's value
-        fprintf(stderr, "%s: alpha is not given. Abort!\n", __func__);
+        fprintf(stderr, "%s: init_cond has to be 1, 2 or 3. Abort!\n", __func__);
         exit(EXIT_FAILURE);
     }
 
-    //currently calculate_NM_measure only supports single-photon exponentail wavepacket
-    if(simulation->measure_NM && simulation->init_cond!=2)
+    if((simulation->init_cond == 1 || simulation->init_cond == 2) && !lookupValue(simulation->parameters_key_value_pair, "k"))
     {
-        fprintf(stderr, "%s: to calculate lambda and mu for NM measures, set init_cond=2. Abort!\n", __func__);
+        //k is a mandatory parameter when init_cond is 1 or 2
+        fprintf(stderr, "%s: the incident frequency k must be given when init_cond is 1 or 2. Abort!\n", __func__);
+        exit(EXIT_FAILURE);
+    }
+
+    if(simulation->init_cond == 2) 
+    {   
+        //want to use exponential wavepacket but forget to set alpha's value
+        if(!lookupValue(simulation->parameters_key_value_pair, "alpha"))
+	{
+           fprintf(stderr, "%s: alpha is not given. Abort!\n", __func__);
+           exit(EXIT_FAILURE);
+	}
+
+	//always 1 in this case, in case the user prepared it wrong
+	simulation->identical_photons = 1;
+    }
+
+    if(simulation->init_cond == 3) 
+    {
+       //make it failed if identical_photons is not explicitly specified for this case
+       //so that identical_photons can be safely set to 1 as default
+       if(!lookupValue(simulation->parameters_key_value_pair, "identical_photons"))
+       {
+          fprintf(stderr, "%s: for two-photon wavapacket calculations, identical_photons needs to be specified (either 0 or 1). Abort!\n", 
+		 __func__);
+          exit(EXIT_FAILURE);
+       }
+
+       //two identical photons
+       if(simulation->identical_photons && (!lookupValue(simulation->parameters_key_value_pair, "k") ||
+	     !lookupValue(simulation->parameters_key_value_pair, "alpha")) )
+       {
+          fprintf(stderr, "%s: for two identical photons, k and alpha need to be specified. Abort!\n", __func__);
+          exit(EXIT_FAILURE);
+       }
+
+       //two different photons
+       if(!simulation->identical_photons && (!lookupValue(simulation->parameters_key_value_pair, "k1")
+             || !lookupValue(simulation->parameters_key_value_pair, "k2")
+	     || !lookupValue(simulation->parameters_key_value_pair, "alpha1")
+	     || !lookupValue(simulation->parameters_key_value_pair, "alpha2")) )
+       {
+          fprintf(stderr, "%s: for two different photons, k1, k2, alpha1 and alpha2 need to be specified. Abort!\n", __func__);
+          exit(EXIT_FAILURE);
+       }
+
+    }
+
+    //calculate_NM_measure only supports well-defined (normalized) wavepackets
+    //TODO: allow init_cond=3
+    if(simulation->measure_NM && (simulation->init_cond!=2))// || simulation->init_cond!=3))
+    {
+        fprintf(stderr, "%s: to calculate lambda and mu for NM measures, set init_cond to be 2. Abort!\n", __func__);
         exit(EXIT_FAILURE);
     }
 }
@@ -337,9 +452,15 @@ void free_grid(grid * simulation)
 
     //free e0 & e1 
     //TODO: take care of this part if the code grows!
-    if(simulation->init_cond == 2)
+    if(simulation->init_cond == 2 || simulation->init_cond == 3)
     {
-       free(simulation->e0);
+       if(simulation->identical_photons)
+          free(simulation->e0);
+       else
+       {
+          free(simulation->e0_1);
+          free(simulation->e0_2);
+       }
        free(simulation->e1);
     }
 
@@ -365,7 +486,13 @@ grid * initialize_grid(const char * filename)
    FDTDsimulation->Ntotal        = 2 * FDTDsimulation->Nx + FDTDsimulation->nx + 2;
    FDTDsimulation->Ny            = atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "Ny"));
    FDTDsimulation->Delta         = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "Delta"), NULL);
-   FDTDsimulation->k             = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "k"), NULL);
+   //FDTDsimulation->k             = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "k"), NULL);
+   FDTDsimulation->k             = (lookupValue(FDTDsimulation->parameters_key_value_pair, "k") ? \
+	                           strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "k"), NULL) : 0); //default: 0
+   FDTDsimulation->k1            = (lookupValue(FDTDsimulation->parameters_key_value_pair, "k1") ? \
+	                           strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "k1"), NULL) : 0); //default: 0
+   FDTDsimulation->k2            = (lookupValue(FDTDsimulation->parameters_key_value_pair, "k2") ? \
+	                           strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "k2"), NULL) : 0); //default: 0
    FDTDsimulation->w0            = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "w0"), NULL);
    FDTDsimulation->Gamma         = strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "gamma"), NULL);
    FDTDsimulation->Lx            = 2 * FDTDsimulation->Nx * FDTDsimulation->Delta;
@@ -377,12 +504,20 @@ grid * initialize_grid(const char * filename)
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_chi")) : 0); //default: off
    FDTDsimulation->save_psi      = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi") ? \
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi")) : 0); //default: off
+   FDTDsimulation->save_psi_square_integral = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi_square_integral") ? \
+		                atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi_square_integral")) : 0); //default: off
    FDTDsimulation->save_psi_binary = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi_binary") ? \
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi_binary")) : 0); //default: off
    FDTDsimulation->init_cond     = (lookupValue(FDTDsimulation->parameters_key_value_pair, "init_cond") ? \
 	                           atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "init_cond")) : 0); //default: 0 (unspecified)
+   FDTDsimulation->identical_photons = (lookupValue(FDTDsimulation->parameters_key_value_pair, "identical_photons") ? \
+	                           atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "identical_photons")) : 1); //default: 1 (yes)
    FDTDsimulation->alpha         = (lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha") ? \
 	                           strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha"), NULL) : 0); //default: 0
+   FDTDsimulation->alpha1        = (lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha1") ? \
+	                           strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha1"), NULL) : 0); //default: 0
+   FDTDsimulation->alpha2        = (lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha2") ? \
+	                           strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha2"), NULL) : 0); //default: 0
    FDTDsimulation->Tstep         = (lookupValue(FDTDsimulation->parameters_key_value_pair, "Tstep") ? \
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "Tstep")) : 0); //default: 0
    FDTDsimulation->measure_NM    = (lookupValue(FDTDsimulation->parameters_key_value_pair, "measure_NM") ? \
@@ -390,6 +525,9 @@ grid * initialize_grid(const char * filename)
 
    //check the validity of parameters
    sanity_check(FDTDsimulation);
+
+   //calculate the normalization constant
+   if(FDTDsimulation->init_cond==3) calculate_normalization_const(FDTDsimulation);
 
    //initialize arrays
    prepare_qubit_wavefunction(FDTDsimulation);
@@ -489,9 +627,9 @@ void save_psi(grid * simulation, const char * filename, double (*part)(double co
 
     for(int j=0; j<simulation->Ny; j+=(simulation->Tstep+1))
     {
-        for(int i=simulation->minus_a_index; i<simulation->Ntotal; i++)
+        for(int i=0; i<simulation->Ntotal; i++)
         {
-            fprintf( f, "%.4g ", part(simulation->psi[j][i]) );
+            fprintf( f, "%.5g ", part(simulation->psi[j][i]) );
         }
 //        for(int i=0; i<simulation->Ntotal; i++)
 //        {
@@ -557,21 +695,35 @@ void save_chi(grid * simulation, const char * filename, double (*part)(double co
 
     //compute chi(a+Delta, a+Delta+tau, t) with tau=i*Delta and t=j*Delta:
     //to make all terms in chi well-defined requires 0 <= i <= Nx-nx/2.
-    //Similarly, j must >= simulation->minus_a_index in order to let signal from the 1st qubit reach the boundary;
-    //put it differently, one cannot take data before the first light cone intersects with the boundary x=Nx*Delta.
-    double complex chi = 0;
-    for(int j=(simulation->Nx+simulation->nx/2+1); j<=simulation->Ny; j+=(simulation->Tstep+1))
+    //
+    //Update: To access transient dynamics for two photons, j now starts from 0 instead of minus_a_index (=Nx+nx/2+1)
+    //
+    //(In the previous version, j >= simulation->minus_a_index in order to let signal from the 1st qubit reach the boundary;
+    //put it differently, one cannot take data before the first light cone intersects with the boundary x=Nx*Delta.)
+    for(int j=0; j<=simulation->Ny; j+=(simulation->Tstep+1))
     {
         for(int i=0; i<=simulation->Nx-simulation->nx/2; i++)
         {
-	    chi = (simulation->init_cond==1 ? cexp(I * simulation->k * (simulation->nx+2+i-2*j) * simulation->Delta) : 0) \
-		  -sqrt(simulation->Gamma)/2.0 * \
-		  (  simulation->psi[j-(simulation->nx+i+1)][simulation->minus_a_index-i] \
-		   - simulation->psi[j-(i+1)][simulation->plus_a_index-i] \
-		   + simulation->psi[j-(simulation->nx+1)][simulation->minus_a_index+i] \
-		   - simulation->psi[j-1][simulation->plus_a_index+i] \
-		  );
-            fprintf( f, "%.4f ", part(chi) );
+            double complex chi = 0;
+	    double complex temp = 0;
+
+            if(simulation->init_cond == 1 || simulation->init_cond == 3)
+	       chi += two_photon_input(simulation->nx/2+1-j, simulation->nx/2+1+i-j, simulation);
+
+            if( j>=(simulation->nx+i+1) ) 
+	       temp += simulation->psi[j-(simulation->nx+i+1)][simulation->minus_a_index-i];
+
+            if( j>=(i+1) ) 
+	       temp -= simulation->psi[j-(i+1)][simulation->plus_a_index-i];
+
+	    if( j>=(simulation->nx+1) )
+	       temp += simulation->psi[j-(simulation->nx+1)][simulation->minus_a_index+i];
+
+	    if( j>=1 )
+	       temp -= simulation->psi[j-1][simulation->plus_a_index+i];
+
+            chi -= sqrt(simulation->Gamma)/2.0 * temp;
+            fprintf( f, "%.5g ", part(chi) );
         }
         fprintf( f, "\n");
     }
@@ -602,4 +754,21 @@ void print_grid(grid * simulation)
         }
         printf("\n");
     }
+}
+
+
+void save_psi_square_integral(grid * simulation, const char * filename)
+{
+    char * str = strdup(filename);
+    str = realloc(str, (strlen(filename)+18)*sizeof(char) );
+    strcat(str, ".psi_square.out");
+
+    int Tmax = (simulation->Ny-1 < simulation->Nx - simulation->nx/2 ? simulation->Ny-1 : simulation->Nx - simulation->nx/2);
+    FILE * f = fopen(str, "w");
+
+    for(int j=0; j<Tmax; j++)
+       fprintf( f, "%.10g\n", psi_square_integral(j, simulation) );
+
+    fclose(f);
+    free(str);
 }

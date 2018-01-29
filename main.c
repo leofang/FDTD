@@ -90,19 +90,19 @@ int main(int argc, char **argv)
            }
    
            //two-photon input: 2*( chi(x-t,-a-t, 0)-chi(x-t,a-t,0) )
-           if( simulation->init_cond == 1 && j-i>=-simulation->minus_a_index ) //it's nonzero only when t-x-a>=0 
+           if( (simulation->init_cond == 1 || simulation->init_cond == 3) \
+	       && j-i>=-simulation->minus_a_index ) //it's nonzero only when t-x-a>=0 
            { 
                double on_light_cone = (j-i == -simulation->minus_a_index?0.5:1.0);
 
-               //double on_origin = (j==0 ? 0.5 : 1.0);
+               //shift +0.5 due to Taylor expansion at the center of square 
                simulation->psi[j][i] += sqrt(simulation->Gamma) * on_light_cone \
-                                        * two_photon_input((i-simulation->origin_index)-j, -simulation->nx/2-j, simulation);
+                                        * two_photon_input((i-simulation->origin_index)-j, -simulation->nx/2-j+0.5, simulation);
 
                if(j>simulation->nx)
                {
-               //    double on_delay_line = (j==simulation->nx ? 0.5 : 1.0);
                    simulation->psi[j][i] -= sqrt(simulation->Gamma) * on_light_cone \
-                                            * two_photon_input((i-simulation->origin_index)-j, simulation->nx/2-j, simulation);
+                                            * two_photon_input((i-simulation->origin_index)-j, simulation->nx/2-j+0.5, simulation);
                }
            }
    
@@ -124,6 +124,8 @@ int main(int argc, char **argv)
       save_psi(simulation, argv[1], cimag);
       //save_psi(simulation, argv[1], cabs);
    }
+   if(simulation->save_psi_square_integral) //for testing init_cond=3
+      save_psi_square_integral(simulation, argv[1]); 
    if(simulation->save_psi_binary)
       save_psi_binary(simulation, argv[1]);
    if(simulation->save_chi)
