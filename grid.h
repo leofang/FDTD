@@ -128,4 +128,7 @@ void initialize_e0(grid * simulation);
 void initialize_e1(grid * simulation);
 void calculate_normalization_const(grid * simulation);
 
+// make W = (i*w0+Gamma/2) as a global variable
+double complex W;
+
 #endif

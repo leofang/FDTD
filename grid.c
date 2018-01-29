@@ -44,8 +44,8 @@ double complex plane_wave_BC(int j, int i, grid * simulation)
     double w0 = simulation->w0;
     double Gamma = simulation->Gamma;
     double complex K = I*simulation->k;
-    double complex W = I*w0 + 0.5*Gamma;
     double complex p = -I*(K - W);
+    W = I*w0 + 0.5*Gamma; //defined in grid.h
 
     double complex e_t = I*sqrt(0.5*Gamma)*(cexp(-K*t)-cexp(-W*t))/p;
     double complex sum = 0;

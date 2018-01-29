@@ -20,3 +20,4 @@ double complex bar_average(int j, int i, grid * simulation);
 double complex two_photon_input(double x1, double x2, grid * simulation);
 double complex one_photon_exponential(double x, double k, double alpha, grid * simulation);
 double psi_square_integral(int j, grid * simulation);
+void solver(int j, int i, grid * simulation);
