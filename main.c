@@ -70,19 +70,19 @@ int main(int argc, char **argv)
    {
        for(int i=xmin; i<xmax_step; i++) //start from x=-Nx*Delta
        {
-           #pragma omp parallel
+           #ifdef _OPENMP
+	   //march each (delayed) thread within range one step in x simultaneously; see paper
+           #pragma omp parallel for
+	   for(int n=0; n<omp_get_max_threads(); n++)
 	   {
-               #ifdef _OPENMP
-	         //march each (delayed) thread within range one step in x simultaneously; see paper
-                 int x_temp = i - omp_get_thread_num() * simulation->nx;
-                 int t_temp = j + omp_get_thread_num();
-	         if(xmin<=x_temp && x_temp<xmax && t_temp<simulation->Ny)
-	            solver(t_temp, x_temp, simulation);
-	       #else
-	         solver(j, i, simulation);
-               #endif
-
+              int x_temp = i - n * simulation->nx;
+              int t_temp = j + n;
+	      if(xmin<=x_temp && x_temp<xmax && t_temp<simulation->Ny)
+	         solver(t_temp, x_temp, simulation);
 	   }
+	   #else
+	     solver(j, i, simulation);
+           #endif
        }
    }
 
