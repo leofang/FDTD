@@ -15,7 +15,7 @@
 #include "dynamics.h"
 #include "NM_measure.h"
 #ifdef _OPENMP
-   #include <omp.h>
+  #include <omp.h>
 #endif
  
 
@@ -33,9 +33,9 @@ int main(int argc, char **argv)
    printf("Copyright (C) 2018 Leo Fang\n\n");
 
    #ifdef _OPENMP
-      printf("FDTD: the executable is compiled with OpenMP, thus it runs parallely with %i threads...\n", omp_get_max_threads());
+     printf("FDTD: the executable is compiled with OpenMP, thus it runs parallely with %i threads...\n", omp_get_max_threads());
    #else
-      printf("FDTD: the executable is compiled without OpenMP, thus it runs serially...\n");
+     printf("FDTD: the executable is compiled without OpenMP, thus it runs serially...\n");
    #endif
    
    printf("FDTD: preparing the grid...\n");
@@ -54,38 +54,41 @@ int main(int argc, char **argv)
    clock_t clock_start, clock_end;
    clock_start = clock();
    #ifdef _OPENMP
-      double omp_start = omp_get_wtime();
-      int xmax_step = xmax + simulation->nx * (omp_get_max_threads()-1);
+     double omp_start = omp_get_wtime();
+     int xmax_step = xmax + simulation->nx * (omp_get_max_threads()-1);
    #else
-      int xmax_step = xmax;
+     int xmax_step = xmax;
    #endif
 
    //simulation starts
-   for(int j=1; j<simulation->Ny; j++) //start from t=1*Delta
+   #ifdef _OPENMP
+     for(int j=1; j<simulation->Ny; j+=omp_get_max_threads())
+   #else
+     for(int j=1; j<simulation->Ny; j++) //start from t=1*Delta
+   #endif
    {
        for(int i=xmin; i<xmax_step; i++) //start from x=-Nx*Delta
        {
            #pragma omp parallel
 	   {
                #ifdef _OPENMP
-                   int temp = i - omp_get_thread_num() * simulation->nx;
+	         //march each (delayed) thread within range one step in x simultaneously
+                 int x_temp = i - omp_get_thread_num() * simulation->nx;
+                 int t_temp = j + omp_get_thread_num();
+	         if(xmin<=x_temp && x_temp<xmax && t_temp<simulation->Ny)
+	            solver(t_temp, x_temp, simulation);
 	       #else
-	           int temp = i;
+	         solver(j, i, simulation);
                #endif
 
-	       //march each thread within range one step in x simultaneously
-	       if(temp>=xmin && temp<xmax)
-	       {
-	          solver(j, temp, simulation);
-	       }
 	   }
        }
    }
 
    // stop the timers
    #ifdef _OPENMP
-      double omp_end = omp_get_wtime();
-      printf("FDTD: simulation ends, OpenMP time elapsd: %f s\n", omp_end - omp_start);
+     double omp_end = omp_get_wtime();
+     printf("FDTD: simulation ends, OpenMP time elapsd: %f s\n", omp_end - omp_start);
    #endif
    clock_end = clock();
    double cpu_time_used = ((double) (clock_end - clock_start)) / CLOCKS_PER_SEC;
