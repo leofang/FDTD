@@ -28,12 +28,13 @@ int main(int argc, char **argv)
    }
    
    printf("FDTD: solving 1+1D delay PDE\n");
+   //printf("https://arxiv.org/abs/1707.05943v1, https://github.com/leofang/FDTD\n");
    printf("This code is released under the WTFPL without any warranty.\n");
    printf("See LICENSE or http://www.wtfpl.net/ for more details.\n");
    printf("Copyright (C) 2018 Leo Fang\n\n");
 
    #ifdef _OPENMP
-     printf("FDTD: the executable is compiled with OpenMP, thus it runs parallely with %i threads...\n", omp_get_max_threads());
+     printf("FDTD: the executable is compiled with OpenMP, thus it runs parallelly with %i threads...\n", omp_get_max_threads());
    #else
      printf("FDTD: the executable is compiled without OpenMP, thus it runs serially...\n");
    #endif
@@ -72,7 +73,7 @@ int main(int argc, char **argv)
            #pragma omp parallel
 	   {
                #ifdef _OPENMP
-	         //march each (delayed) thread within range one step in x simultaneously
+	         //march each (delayed) thread within range one step in x simultaneously; see paper
                  int x_temp = i - omp_get_thread_num() * simulation->nx;
                  int t_temp = j + omp_get_thread_num();
 	         if(xmin<=x_temp && x_temp<xmax && t_temp<simulation->Ny)
