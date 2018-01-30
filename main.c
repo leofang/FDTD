@@ -77,19 +77,9 @@ int main(int argc, char **argv)
 	       if(temp>=xmin && temp<xmax)
 	       {
 	          solver(j, temp, simulation);
-		  //if(j==84)
-		  //   printf("#%i: %i\n", omp_get_thread_num(), temp);
-	       }
-	       else
-	       {
-		  //if(j==84)
-		  //   printf("#%i: x\n", omp_get_thread_num());
 	       }
 	   }
-	   //if(j==84)
-	   //   printf("\n");
        }
-       //printf("%i-th loop ends\n", j);
    }
 
    // stop the timers
@@ -139,8 +129,6 @@ int main(int argc, char **argv)
       save_e1(simulation, argv[1], creal);
       save_e1(simulation, argv[1], cimag);
    }
-
-   //printf("Done!\n");
 
    free_grid(simulation);
 
