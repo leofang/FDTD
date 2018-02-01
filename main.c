@@ -16,12 +16,22 @@
 #include "NM_measure.h"
 #ifdef _OPENMP
   #include <omp.h>
+  #include <unistd.h> //for execv
 #endif
   double timing[2]={0};
  
 
 int main(int argc, char **argv)
 {
+   // #ifdef _OPENMP
+   //   if(!omp_get_cancellation())
+   //   {
+   //      printf("Cancellations were not enabled, enabling cancellation and rerunning program\n\n");
+   //      putenv("OMP_CANCELLATION=true");
+   //      execv(argv[0], argv);
+   //   }
+   // #endif
+
    if(argc != 2)
    {
       fprintf(stderr, "Usage: ./FDTD input_parameters\n");
@@ -35,7 +45,8 @@ int main(int argc, char **argv)
    printf("Copyright (C) 2018 Leo Fang\n\n");
 
    #ifdef _OPENMP
-     printf("FDTD: the executable is compiled with OpenMP, so it runs parallelly with %i threads...\n", omp_get_max_threads());
+     int Nth = omp_get_max_threads(); //get available number of threads
+     printf("FDTD: the executable is compiled with OpenMP, so it runs parallelly with %i threads...\n", Nth);
    #else
      printf("FDTD: the executable is compiled without OpenMP, so it runs serially...\n");
    #endif
@@ -47,14 +58,10 @@ int main(int argc, char **argv)
    // W defined in grid.h
    W = simulation->w0*I+0.5*simulation->Gamma;
 
-   //grid dimension in x
+   //grid dimension in x and t
    int xmin = simulation->nx+1;   //start from x=-Nx*Delta
    int xmax = simulation->Ntotal;
-
-   #ifdef _OPENMP
-     //get available number of threads
-     int Nth = omp_get_max_threads();
-   #endif
+   int tmax = simulation->Ny;       
 
    printf("FDTD: simulation starts...\n");// fflush(stdout);
 
@@ -63,33 +70,29 @@ int main(int argc, char **argv)
    clock_start = clock();
    #ifdef _OPENMP
      double omp_start = omp_get_wtime();
-     int xmax_step = xmax + simulation->nx * (Nth-1);
-   #else
-     int xmax_step = xmax;
    #endif
 
    //simulation starts
-   int i, j;
    #ifdef _OPENMP
-     #pragma omp parallel shared (i, j, simulation)
+     #pragma omp parallel
      {
-     for(j=1; j<simulation->Ny; j+=Nth)
+     int id = omp_get_thread_num();
+     for(int j=1+id; j<tmax+id; j+=Nth)
+     {
+         for(int i=xmin-id*simulation->nx; i<xmax+(Nth-id-1)*simulation->nx; i++) //start from x=-Nx*Delta
+	 {
    #else
-     for(j=1; j<simulation->Ny; j++) //start from t=1*Delta
-   #endif
+     for(int j=1; j<tmax; j++) //start from t=1*Delta
      {
-         for(i=xmin; i<xmax_step; i++) //start from x=-Nx*Delta
+         for(int i=xmin; i<xmax; i++) //start from x=-Nx*Delta
          {
+   #endif
              #ifdef _OPENMP
+               #pragma omp cancel parallel if(j==tmax-1 && i==xmax)  //stop if reach the grid boundary
                //march each (delayed) thread within range one step in x simultaneously; see paper
-               #pragma omp for
-               for(int n=0; n<Nth; n++)
-               {
-                  int x_temp = i - n * simulation->nx;
-                  int t_temp = j + n;
-                  if(xmin<=x_temp && x_temp<xmax && t_temp<simulation->Ny)
-                     solver(t_temp, x_temp, simulation);
-               }
+               if(xmin<=i && i<xmax && j<tmax)
+                  solver(j, i, simulation);
+               #pragma omp barrier
              #else
                solver(j, i, simulation);
              #endif
