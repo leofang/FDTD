@@ -18,7 +18,7 @@
   #include <omp.h>
   #include <unistd.h> //for execv
 #endif
-  double timing[2]={0};
+//  double timing[2]={0};
  
 
 int main(int argc, char **argv)
@@ -47,6 +47,19 @@ int main(int argc, char **argv)
    #ifdef _OPENMP
      int Nth = omp_get_max_threads(); //get available number of threads
      printf("FDTD: the executable is compiled with OpenMP, so it runs parallelly with %i threads...\n", Nth);
+     //initiallize an array to record the current x-positions of the solvers
+     //the array will be locked 
+     int * solver_x_positions = malloc(Nth * sizeof(*solver_x_positions));
+     if(!solver_x_positions)
+     {
+        fprintf(stderr, "%s: malloc fails, abort.\n", __func__);
+	exit(EXIT_FAILURE);
+     }
+     omp_lock_t position_locks[Nth];
+     for(int i=0; i<Nth; i++)
+     {
+        omp_init_lock(&position_locks[i]);
+     }
    #else
      printf("FDTD: the executable is compiled without OpenMP, so it runs serially...\n");
    #endif
@@ -70,17 +83,21 @@ int main(int argc, char **argv)
    clock_start = clock();
    #ifdef _OPENMP
      double omp_start = omp_get_wtime();
+     int dummy = 0; //avoid compiler loop optimization
    #endif
 
    //simulation starts
    #ifdef _OPENMP
-     #pragma omp parallel
+     #pragma omp parallel firstprivate(dummy)
      {
      int id = omp_get_thread_num();
      for(int j=1+id; j<tmax+id; j+=Nth)
      {
-         for(int i=xmin-id*simulation->nx; i<xmax+(Nth-id-1)*simulation->nx; i++) //start from x=-Nx*Delta
-	 {
+	 //solver_x_positions[id] = xmin-id*simulation->nx; //reset
+	 //for(int i=xmin-id*simulation->nx; i<xmax+(Nth-id-1)*simulation->nx; i++) //start from x=-Nx*Delta
+	 solver_x_positions[id] = xmin; //reset
+	 for(int i=xmin; i<xmax; i++) //start from x=-Nx*Delta
+	 {  
    #else
      for(int j=1; j<tmax; j++) //start from t=1*Delta
      {
@@ -91,21 +108,37 @@ int main(int argc, char **argv)
                #pragma omp cancel parallel if(j==tmax-1 && i==xmax)  //stop if reach the grid boundary
                //march each (delayed) thread within range one step in x simultaneously; see paper
                if(xmin<=i && i<xmax && j<tmax)
+	       {
+		  if(id!=0) //let the first guy runs unrestrainedly
+		  {
+		     //others must be dealyed by a certain amount, otherwise busy waiting
+		     while(solver_x_positions[id-1]-i<simulation->nx && solver_x_positions[id-1]<xmax)
+		     {
+			dummy++; //if do nothing in the loop, this loop will be mistakenly optimized by the compiler
+		     }
+		  }
                   solver(j, i, simulation);
-               #pragma omp barrier
+	       }
+	       solver_x_positions[id]++;
+               #pragma omp flush
              #else
                solver(j, i, simulation);
              #endif
          }
+         #pragma omp barrier
      }
    #ifdef _OPENMP
      }
    #endif
 
-   // stop the timers
    #ifdef _OPENMP
-     double omp_end = omp_get_wtime();
+     double omp_end = omp_get_wtime(); // stop the timers
      printf("FDTD: simulation ends, OpenMP time elapsd: %f s\n", omp_end - omp_start);
+     for(int i=0; i<Nth; i++)
+     {
+        omp_destroy_lock(&position_locks[i]);
+     }
+     free(solver_x_positions);
    #endif
    clock_end = clock();
    double cpu_time_used = ((double) (clock_end - clock_start)) / CLOCKS_PER_SEC;
