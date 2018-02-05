@@ -49,7 +49,7 @@ int main(int argc, char **argv)
      printf("FDTD: the executable is compiled with OpenMP, so it runs parallelly with %i threads...\n", Nth);
      //initiallize an array to record the current x-positions of the solvers
      //the array will be locked 
-     int * solver_x_positions = malloc(Nth * sizeof(*solver_x_positions));
+     volatile int * solver_x_positions = malloc(Nth * sizeof(*solver_x_positions));
      if(!solver_x_positions)
      {
         fprintf(stderr, "%s: malloc fails, abort.\n", __func__);
@@ -93,10 +93,10 @@ int main(int argc, char **argv)
      int id = omp_get_thread_num();
      for(int j=1+id; j<tmax+id; j+=Nth)
      {
-	 //solver_x_positions[id] = xmin-id*simulation->nx; //reset
-	 //for(int i=xmin-id*simulation->nx; i<xmax+(Nth-id-1)*simulation->nx; i++) //start from x=-Nx*Delta
-	 solver_x_positions[id] = xmin; //reset
-	 for(int i=xmin; i<xmax; i++) //start from x=-Nx*Delta
+	 solver_x_positions[id] = xmin-id*simulation->nx; //reset
+	 for(int i=xmin-id*simulation->nx; i<xmax+(Nth-id-1)*simulation->nx; i++) //start from x=-Nx*Delta
+	 //solver_x_positions[id] = xmin; //reset
+	 //for(int i=xmin; i<xmax; i++) //start from x=-Nx*Delta
 	 {  
    #else
      for(int j=1; j<tmax; j++) //start from t=1*Delta
@@ -109,18 +109,19 @@ int main(int argc, char **argv)
                //march each (delayed) thread within range one step in x simultaneously; see paper
                if(xmin<=i && i<xmax && j<tmax)
 	       {
-		  if(id!=0) //let the first guy runs unrestrainedly
-		  {
-		     //others must be dealyed by a certain amount, otherwise busy waiting
-		     while(solver_x_positions[id-1]-i<simulation->nx && solver_x_positions[id-1]<xmax)
-		     {
-			dummy++; //if do nothing in the loop, this loop will be mistakenly optimized by the compiler
-		     }
-		  }
+	          if(id!=0) //let the first guy runs unrestrainedly
+	          {
+	             //others must be dealyed by a certain amount, otherwise busy waiting
+	             while(solver_x_positions[id-1]-i<simulation->nx && solver_x_positions[id-1]<xmax)
+	             {
+	                dummy++; //if do nothing in the loop, this loop will be mistakenly optimized by the compiler
+	             }
+	             dummy=0;
+	          }
                   solver(j, i, simulation);
 	       }
+               #pragma omp atomic
 	       solver_x_positions[id]++;
-               #pragma omp flush
              #else
                solver(j, i, simulation);
              #endif
@@ -138,7 +139,7 @@ int main(int argc, char **argv)
      {
         omp_destroy_lock(&position_locks[i]);
      }
-     free(solver_x_positions);
+     free((void *)solver_x_positions);
    #endif
    clock_end = clock();
    double cpu_time_used = ((double) (clock_end - clock_start)) / CLOCKS_PER_SEC;
