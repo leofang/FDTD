@@ -8,7 +8,7 @@
 
 CC=gcc-5
 OpenMP=
-CFLAGS=-Wall -std=gnu99 -pedantic -O3 #-ggdb3 -Werror
+CFLAGS=-Wall -std=gnu99 -pedantic -pthread -O3 #-ggdb3 -Werror
 SRCS=$(wildcard *.c)
 OBJS=$(patsubst %.c, %.o, $(SRCS))
 PROGRAM=FDTD

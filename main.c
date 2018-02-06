@@ -10,28 +10,21 @@
 
 #include <math.h>
 #include <time.h>
+#include <unistd.h> //for _POSIX_THREADS
 #include "grid.h"
 #include "kv.h"
 #include "dynamics.h"
 #include "NM_measure.h"
-#ifdef _OPENMP
-  #include <omp.h>
-  #include <unistd.h> //for execv
+#include "pthread_solver.h"
+
+#ifndef NTHREADS
+#define NTHREADS 4
 #endif
 //  double timing[2]={0};
  
 
 int main(int argc, char **argv)
 {
-   // #ifdef _OPENMP
-   //   if(!omp_get_cancellation())
-   //   {
-   //      printf("Cancellations were not enabled, enabling cancellation and rerunning program\n\n");
-   //      putenv("OMP_CANCELLATION=true");
-   //      execv(argv[0], argv);
-   //   }
-   // #endif
-
    if(argc != 2)
    {
       fprintf(stderr, "Usage: ./FDTD input_parameters\n");
@@ -44,103 +37,89 @@ int main(int argc, char **argv)
    printf("See LICENSE or http://www.wtfpl.net/ for more details.\n");
    printf("Copyright (C) 2018 Leo Fang\n\n");
 
-   #ifdef _OPENMP
-     int Nth = omp_get_max_threads(); //get available number of threads
-     printf("FDTD: the executable is compiled with OpenMP, so it runs parallelly with %i threads...\n", Nth);
+   printf("FDTD: preparing the grid...\n");
+   grid * simulation = initialize_grid(argv[1]);
+//   printf("\033[F\033[2KFDTD: preparing the grid...Done!\n");
+
+   #ifdef _POSIX_THREADS
+     int Nth = NTHREADS; //TODO: change this by reading the simulation parameters
+     pthread_t thread_id[Nth];
+     solver_info thread_id_list[Nth];
+
+     volatile int barrier_counter = 0;
+     pthread_cond_t barrier_cond;
+     pthread_cond_init(&barrier_cond, NULL);
+     pthread_mutex_t barrier_counter_lock;
+     pthread_mutex_init(&barrier_counter_lock, NULL);
+
+     //TODO: malloc check
      //initiallize an array to record the current x-positions of the solvers
      //the array will be locked 
      volatile int * solver_x_positions = malloc(Nth * sizeof(*solver_x_positions));
      if(!solver_x_positions)
      {
         fprintf(stderr, "%s: malloc fails, abort.\n", __func__);
-	exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
      }
-     omp_lock_t position_locks[Nth];
-     for(int i=0; i<Nth; i++)
+     pthread_cond_t * solver_halt = malloc(Nth * sizeof(*solver_halt));
+     pthread_mutex_t * solver_locks = malloc(Nth * sizeof(*solver_locks));
+
+     printf("FDTD: the executable is compiled with pthreads, so it runs parallelly with %i threads...\n", Nth);
+
+     //TODO: timing
+    
+     //initialize pthreads
+     for(int i=0; i < Nth; i++)
      {
-        omp_init_lock(&position_locks[i]);
+         thread_id_list[i].id  = i;
+         thread_id_list[i].Nth = Nth;
+         thread_id_list[i].simulation = simulation;
+
+         thread_id_list[i].barrier_counter = &barrier_counter;
+         thread_id_list[i].barrier_cond = &barrier_cond;
+         thread_id_list[i].barrier_counter_lock = &barrier_counter_lock;
+
+         thread_id_list[i].solver_x_positions = solver_x_positions;
+         pthread_cond_init(&solver_halt[i], NULL);
+         thread_id_list[i].solver_halt = solver_halt;
+         pthread_mutex_init(&solver_locks[i], NULL);
+         thread_id_list[i].solver_locks = solver_locks;
      }
    #else
-     printf("FDTD: the executable is compiled without OpenMP, so it runs serially...\n");
+     printf("FDTD: the executable is compiled without pthreads, so it runs serially...\n");
    #endif
    
-   printf("FDTD: preparing the grid...\n");
-   grid * simulation = initialize_grid(argv[1]);
-//   printf("\033[F\033[2KFDTD: preparing the grid...Done!\n");
-
-   // W defined in grid.h
-   W = simulation->w0*I+0.5*simulation->Gamma;
-
-   //grid dimension in x and t
-   int xmin = simulation->nx+1;   //start from x=-Nx*Delta
-   int xmax = simulation->Ntotal;
-   int tmax = simulation->Ny;       
-
    printf("FDTD: simulation starts...\n");// fflush(stdout);
 
    // initialize time measurement 
    clock_t clock_start, clock_end;
    clock_start = clock();
-   #ifdef _OPENMP
-     double omp_start = omp_get_wtime();
-     int dummy = 0; //avoid compiler loop optimization
+   #ifdef _POSIX_THREADS
+     //double omp_start = omp_get_wtime();
+     //TODO: timing
    #endif
 
    //simulation starts
-   #ifdef _OPENMP
-     #pragma omp parallel firstprivate(dummy)
-     {
-     int id = omp_get_thread_num();
-     for(int j=1+id; j<tmax+id; j+=Nth)
-     {
-	 solver_x_positions[id] = xmin-id*simulation->nx; //reset
-	 for(int i=xmin-id*simulation->nx; i<xmax+(Nth-id-1)*simulation->nx; i++) //start from x=-Nx*Delta
-	 //solver_x_positions[id] = xmin; //reset
-	 //for(int i=xmin; i<xmax; i++) //start from x=-Nx*Delta
-	 {  
+   #ifdef _POSIX_THREADS
+      for(int i=0; i < Nth; i++)
+          pthread_create( &thread_id[i], NULL, solver_wrapper, (void *)&thread_id_list[i]);
+      for(int i=0; i < Nth; i++)
+          pthread_join( thread_id[i], NULL);
    #else
-     for(int j=1; j<tmax; j++) //start from t=1*Delta
-     {
-         for(int i=xmin; i<xmax; i++) //start from x=-Nx*Delta
-         {
-   #endif
-             #ifdef _OPENMP
-               #pragma omp cancel parallel if(j==tmax-1 && i==xmax)  //stop if reach the grid boundary
-               //march each (delayed) thread within range one step in x simultaneously; see paper
-               if(xmin<=i && i<xmax && j<tmax)
-	       {
-	          if(id!=0) //let the first guy runs unrestrainedly
-	          {
-	             //others must be dealyed by a certain amount, otherwise busy waiting
-	             while(solver_x_positions[id-1]-i<simulation->nx && solver_x_positions[id-1]<xmax)
-	             {
-	                dummy++; //if do nothing in the loop, this loop will be mistakenly optimized by the compiler
-	             }
-	             dummy=0;
-	          }
-                  solver(j, i, simulation);
-	       }
-               #pragma omp atomic
-	       solver_x_positions[id]++;
-             #else
-               solver(j, i, simulation);
-             #endif
-         }
-         #pragma omp barrier
-     }
-   #ifdef _OPENMP
-     }
+      //TODO
+      //solver_wrapper(thread_id_list[0]);
+      //for(int i=)
    #endif
 
-   #ifdef _OPENMP
-     double omp_end = omp_get_wtime(); // stop the timers
-     printf("FDTD: simulation ends, OpenMP time elapsd: %f s\n", omp_end - omp_start);
-     for(int i=0; i<Nth; i++)
-     {
-        omp_destroy_lock(&position_locks[i]);
-     }
-     free((void *)solver_x_positions);
-   #endif
+   //#ifdef _OPENMP
+   //  double omp_end = omp_get_wtime(); // stop the timers
+   //  printf("FDTD: simulation ends, OpenMP time elapsd: %f s\n", omp_end - omp_start);
+   //  for(int i=0; i<Nth; i++)
+   //  {
+   //     omp_destroy_lock(&position_locks[i]);
+   //  }
+   //  free((void *)solver_x_positions);
+   //#endif
    clock_end = clock();
    double cpu_time_used = ((double) (clock_end - clock_start)) / CLOCKS_PER_SEC;
    printf("FDTD: simulation ends, clock time elapsd: %f s\n", cpu_time_used);
