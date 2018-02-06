@@ -11,6 +11,7 @@
 #include <math.h>
 #include <time.h>
 #include <unistd.h> //for _POSIX_THREADS
+//#include <time.h>   //for clock_gettime
 #include "grid.h"
 #include "kv.h"
 #include "dynamics.h"
@@ -52,22 +53,23 @@ int main(int argc, char **argv)
      pthread_mutex_t barrier_counter_lock;
      pthread_mutex_init(&barrier_counter_lock, NULL);
 
-     //TODO: malloc check
      //initiallize an array to record the current x-positions of the solvers
      //the array will be locked 
-     volatile int * solver_x_positions = malloc(Nth * sizeof(*solver_x_positions));
-     if(!solver_x_positions)
-     {
-        fprintf(stderr, "%s: malloc fails, abort.\n", __func__);
-        exit(EXIT_FAILURE);
-     }
-     pthread_cond_t * solver_halt = malloc(Nth * sizeof(*solver_halt));
-     pthread_mutex_t * solver_locks = malloc(Nth * sizeof(*solver_locks));
+     volatile int solver_x_positions[Nth];
+     pthread_cond_t solver_halt[Nth];
+     pthread_mutex_t solver_locks[Nth];
+     //TODO: malloc check
+     //volatile int * solver_x_positions = malloc(Nth * sizeof(*solver_x_positions));
+     //if(!solver_x_positions)
+     //{
+     //   fprintf(stderr, "%s: malloc fails, abort.\n", __func__);
+     //   exit(EXIT_FAILURE);
+     //}
+     //pthread_cond_t * solver_halt = malloc(Nth * sizeof(*solver_halt));
+     //pthread_mutex_t * solver_locks = malloc(Nth * sizeof(*solver_locks));
 
      printf("FDTD: the executable is compiled with pthreads, so it runs parallelly with %i threads...\n", Nth);
 
-     //TODO: timing
-    
      //initialize pthreads
      for(int i=0; i < Nth; i++)
      {
@@ -95,8 +97,9 @@ int main(int argc, char **argv)
    clock_t clock_start, clock_end;
    clock_start = clock();
    #ifdef _POSIX_THREADS
-     //double omp_start = omp_get_wtime();
-     //TODO: timing
+     ////for timing
+     //struct timespec start, end;
+     //clock_gettime(CLOCK_MONOTONIC, &start);
    #endif
 
    //simulation starts
@@ -111,15 +114,15 @@ int main(int argc, char **argv)
       //for(int i=)
    #endif
 
-   //#ifdef _OPENMP
-   //  double omp_end = omp_get_wtime(); // stop the timers
-   //  printf("FDTD: simulation ends, OpenMP time elapsd: %f s\n", omp_end - omp_start);
-   //  for(int i=0; i<Nth; i++)
-   //  {
-   //     omp_destroy_lock(&position_locks[i]);
-   //  }
-   //  free((void *)solver_x_positions);
-   //#endif
+   #ifdef _POSIX_THREADS
+     //clock_gettime(CLOCK_MONOTONIC, &end);
+     //double elapsed = (end.tv_sec - start.tv_sec);
+     //elapsed += (end.tv_nsec - start.tv_nsec) / 1000000000.0;
+     //printf("FDTD: simulation ends, clock_gettime elapsd: %f s\n", elapsed);
+     
+     // //TODO: clean up
+     // free((void *)solver_x_positions);
+   #endif
    clock_end = clock();
    double cpu_time_used = ((double) (clock_end - clock_start)) / CLOCKS_PER_SEC;
    printf("FDTD: simulation ends, clock time elapsd: %f s\n", cpu_time_used);
