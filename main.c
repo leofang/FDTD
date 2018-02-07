@@ -21,7 +21,7 @@
 //#define NTHREADS 4
 //#endif
 //  double timing[2]={0};
- 
+double getRealTime(); //defined in getRealTime.c
 
 int main(int argc, char **argv)
 {
@@ -99,7 +99,8 @@ int main(int argc, char **argv)
    clock_t clock_start, clock_end;
    clock_start = clock();
    #ifdef _POSIX_THREADS
-     ////for timing
+     //for timing
+     double start = getRealTime();
      //struct timespec start, end;
      //clock_gettime(CLOCK_MONOTONIC, &start);
    #endif
@@ -117,6 +118,8 @@ int main(int argc, char **argv)
    #endif
 
    #ifdef _POSIX_THREADS
+     double end = getRealTime();
+     printf("FDTD: simulation ends, getRealTime measures: %lf s\n", end - start);
      //clock_gettime(CLOCK_MONOTONIC, &end);
      //double elapsed = (end.tv_sec - start.tv_sec);
      //elapsed += (end.tv_nsec - start.tv_nsec) / 1000000000.0;
