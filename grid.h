@@ -99,6 +99,7 @@ struct _grid
    int identical_photons; //whether or not the two photons are identical (default: yes; only effective for init_cond=3)
    size_t Tstep;          //for output of save_psi: save psi for every (Tstep+1) temporal steps
    int measure_NM;        //currently it means whether to save e0 and e1 or not //TODO: extend this part
+   size_t Nth;            //number of threads
 
    //input parameters (stored for convenience)
    kvarray_t * parameters_key_value_pair;

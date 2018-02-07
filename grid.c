@@ -520,6 +520,8 @@ grid * initialize_grid(const char * filename)
 	                           strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha2"), NULL) : 0); //default: 0
    FDTDsimulation->Tstep         = (lookupValue(FDTDsimulation->parameters_key_value_pair, "Tstep") ? \
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "Tstep")) : 0); //default: 0
+   FDTDsimulation->Nth           = (lookupValue(FDTDsimulation->parameters_key_value_pair, "Nth") ? \
+				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "Nth")) : 1); //default: 1
    FDTDsimulation->measure_NM    = (lookupValue(FDTDsimulation->parameters_key_value_pair, "measure_NM") ? \
 	                           atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "measure_NM")) : 0); //default: off
 

@@ -10,7 +10,6 @@
 
 #include <math.h>
 #include <time.h>
-#include <unistd.h> //for _POSIX_THREADS
 //#include <time.h>   //for clock_gettime
 #include "grid.h"
 #include "kv.h"
@@ -18,9 +17,9 @@
 #include "NM_measure.h"
 #include "pthread_solver.h"
 
-#ifndef NTHREADS
-#define NTHREADS 4
-#endif
+//#ifndef NTHREADS
+//#define NTHREADS 4
+//#endif
 //  double timing[2]={0};
  
 
@@ -38,12 +37,17 @@ int main(int argc, char **argv)
    printf("See LICENSE or http://www.wtfpl.net/ for more details.\n");
    printf("Copyright (C) 2018 Leo Fang\n\n");
 
+   #ifdef _POSIX_THREADS
+      printf("FDTD: the executable is compiled with pthreads, so it will be multi-threaded.\n");
+   #else
+      printf("FDTD: the executable is single-threaded.\n");
+   #endif
    printf("FDTD: preparing the grid...\n");
    grid * simulation = initialize_grid(argv[1]);
 //   printf("\033[F\033[2KFDTD: preparing the grid...Done!\n");
 
    #ifdef _POSIX_THREADS
-     int Nth = NTHREADS; //TODO: change this by reading the simulation parameters
+     int Nth = simulation->Nth;
      pthread_t thread_id[Nth];
      solver_info thread_id_list[Nth];
 
@@ -68,7 +72,7 @@ int main(int argc, char **argv)
      //pthread_cond_t * solver_halt = malloc(Nth * sizeof(*solver_halt));
      //pthread_mutex_t * solver_locks = malloc(Nth * sizeof(*solver_locks));
 
-     printf("FDTD: the executable is compiled with pthreads, so it runs parallelly with %i threads...\n", Nth);
+     printf("FDTD: %i threads will be used.\n", Nth);
 
      //initialize pthreads
      for(int i=0; i < Nth; i++)
@@ -87,8 +91,6 @@ int main(int argc, char **argv)
          pthread_mutex_init(&solver_locks[i], NULL);
          thread_id_list[i].solver_locks = solver_locks;
      }
-   #else
-     printf("FDTD: the executable is compiled without pthreads, so it runs serially...\n");
    #endif
    
    printf("FDTD: simulation starts...\n");// fflush(stdout);
