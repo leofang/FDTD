@@ -6,13 +6,12 @@
 # published by Sam Hocevar. See the accompanying LICENSE file or
 # http://www.wtfpl.net/ for more details.
 
-CC=gcc-5
-OpenMP=
-CFLAGS=-Wall -std=gnu99 -pedantic -pthread -O3 #-ggdb3 -Werror
+CC=gcc
+override CFLAGS+=-Wall -std=gnu99 -pedantic -O3 -pthread #-ggdb3 -Werror
 SRCS=$(wildcard *.c)
 OBJS=$(patsubst %.c, %.o, $(SRCS))
 PROGRAM=FDTD
-LDFLAGS=-lm
+LDFLAGS=-lm -pthread
 
 $(PROGRAM): $(OBJS)
 	$(CC) $(CFLAGS) $(OpenMP) -o $@ $(OBJS) $(LDFLAGS)

@@ -12,6 +12,7 @@
 #define __FDTD_PTHREAD_H__
 
 #include <unistd.h> //for _POSIX_THREADS
+#define _MULTI_THREADED
 #include <pthread.h>
 #include "dynamics.h"
 
