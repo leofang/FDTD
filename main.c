@@ -47,7 +47,7 @@ int main(int argc, char **argv)
      pthread_t thread_id[Nth];
      solver_info thread_id_list[Nth];
 
-     volatile int barrier_counter = 0;
+     int barrier_counter = 0;
      pthread_cond_t barrier_cond;
      pthread_cond_init(&barrier_cond, NULL);
      pthread_mutex_t barrier_counter_lock;
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 
      //initiallize an array to record the current x-positions of the solvers
      //the array will be locked 
-     volatile int solver_x_positions[Nth];
+     int solver_x_positions[Nth];
      pthread_cond_t solver_halt[Nth];
      pthread_mutex_t solver_locks[Nth];
      //TODO: malloc check

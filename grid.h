@@ -74,11 +74,7 @@ struct _grid
 
    //actual info on dynamics
    double complex * psit0;  //initial condition psi(x,0) (stored as psi0[x])
-   #ifdef _OPENMP
-      volatile double complex ** psi;   //wavefunction psi(x,t) to be computed (stored as psi[t][x])
-   #else
-      double complex ** psi;   //wavefunction psi(x,t) to be computed (stored as psi[t][x])
-   #endif
+   double complex ** psi;   //wavefunction psi(x,t) to be computed (stored as psi[t][x])
    double complex ** psix0; //boundary condition psi(-L,0) (stored as psix0[t][x])
    double complex * e0;     //qubit wavefunction for I.C. e(0)=0 and an exponential wavepacket
    double complex * e0_1;   //qubit wavefunction for I.C. e(0)=0 and the exponential wavepacket #1

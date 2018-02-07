@@ -19,7 +19,7 @@
 struct _FDTD_barrier
 {
    int Nth;
-   volatile int barrier_counter;
+   int barrier_counter;
    pthread_cond_t barrier_cond;
    pthread_mutex_t barrier_counter_lock;
 };
@@ -31,10 +31,10 @@ struct _solver_info
 {
    int id;
    int Nth;
-   volatile int * barrier_counter;
+   int * barrier_counter;
    pthread_cond_t * barrier_cond;
    pthread_mutex_t * barrier_counter_lock;
-   volatile int * solver_x_positions;
+   int * solver_x_positions;
    pthread_cond_t * solver_halt;
    pthread_mutex_t * solver_locks;
    grid * simulation;  
@@ -49,10 +49,10 @@ inline void * solver_wrapper(void * arg)
    //copy the solver info 
    int id  = ((solver_info *)arg)->id; 
    int Nth = ((solver_info *)arg)->Nth; 
-   volatile int * barrier_counter = ((solver_info *)arg)->barrier_counter;
+   int * barrier_counter = ((solver_info *)arg)->barrier_counter;
    pthread_cond_t * barrier_cond = ((solver_info *)arg)->barrier_cond;
    pthread_mutex_t * barrier_counter_lock = ((solver_info *)arg)->barrier_counter_lock;
-   volatile int * solver_x_positions = ((solver_info *)arg)->solver_x_positions; 
+   int * solver_x_positions = ((solver_info *)arg)->solver_x_positions; 
    pthread_cond_t * solver_halt = ((solver_info *)arg)->solver_halt;
    pthread_mutex_t * solver_locks = ((solver_info *)arg)->solver_locks;
 

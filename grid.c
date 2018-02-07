@@ -447,8 +447,8 @@ void free_grid(grid * simulation)
 
     //free psi
     for(int j=0; j<simulation->Ny; j++)
-       free((void *)simulation->psi[j]);
-    free((void *)simulation->psi);
+       free(simulation->psi[j]);
+    free(simulation->psi);
 
     //free e0 & e1 
     //TODO: take care of this part if the code grows!
@@ -662,7 +662,7 @@ void save_psi_binary(grid * simulation, const char * filename)
 
     for(int j=0; j<simulation->Ny; j+=(simulation->Tstep+1))
     {
-        fwrite((void *)(simulation->psi[j] + simulation->minus_a_index), sizeof(double complex), array_size, f);
+        fwrite(simulation->psi[j] + simulation->minus_a_index, sizeof(double complex), array_size, f);
     }
 
     fclose(f);
