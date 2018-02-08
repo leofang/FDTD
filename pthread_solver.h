@@ -81,20 +81,25 @@ inline void * solver_wrapper(void * arg)
           }
 	  solver(j, i, simulation); 
 
-	  //increment the current position and wake up the next solver if it is waiting
+	  //update the current position and wake up the next solver if it is waiting
           pthread_mutex_lock(&solver_locks[id]);
-          solver_x_positions[id]++;
+	  if(i==xmin)
+	  {
+	     solver_x_positions[id]=i;
+	     solver_t_positions[id]=j;
+	  }
+	  else
+             solver_x_positions[id]++;
           pthread_mutex_unlock(&solver_locks[id]);
 	  pthread_cond_signal(&solver_halt[next_id]);
        }
-
-       //update the current position
-       pthread_mutex_lock(&solver_locks[id]);
-       solver_x_positions[id]=xmin;
-       solver_t_positions[id]+=Nth;
-       pthread_mutex_unlock(&solver_locks[id]);
-       pthread_cond_signal(&solver_halt[next_id]);
    }
+
+   //place the solver outside the grid to indicate that it is finished
+   pthread_mutex_lock(&solver_locks[id]);
+   solver_t_positions[id]=tmax+id;
+   pthread_mutex_unlock(&solver_locks[id]);
+   pthread_cond_signal(&solver_halt[next_id]);
 
    return NULL;
 }
