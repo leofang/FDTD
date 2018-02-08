@@ -17,26 +17,14 @@
 #include "dynamics.h"
 
 
-//TODO: code re-factorize
-struct _FDTD_barrier
-{
-   int Nth;
-   int barrier_counter;
-   pthread_cond_t barrier_cond;
-   pthread_mutex_t barrier_counter_lock;
-};
-typedef struct _FDTD_barrier FDTD_barrier;
-
-
-//solver_locks[i] protects solver_x_positions[i]
+//solver_locks[i] protects solver_x_positions[i] and solver_t_positions[i]
+//solver_halt[i] is used to wait for the previous solver (i-1 if i!=0 and i=Nth-1 if i==0)
 struct _solver_info
 {
    int id;
    int Nth;
-   int * barrier_counter;
-   pthread_cond_t * barrier_cond;
-   pthread_mutex_t * barrier_counter_lock;
    int * solver_x_positions;
+   int * solver_t_positions;
    pthread_cond_t * solver_halt;
    pthread_mutex_t * solver_locks;
    grid * simulation;  
@@ -44,22 +32,20 @@ struct _solver_info
 typedef struct _solver_info solver_info;
 
 
-//turn on Nth(=NTHREADS by default) threads to run the solver
+//turn on Nth threads to run the solver
 //the argument arg is of type solver_info* 
 inline void * solver_wrapper(void * arg)
 {
    //copy the solver info 
    int id  = ((solver_info *)arg)->id; 
    int Nth = ((solver_info *)arg)->Nth; 
-   int * barrier_counter = ((solver_info *)arg)->barrier_counter;
-   pthread_cond_t * barrier_cond = ((solver_info *)arg)->barrier_cond;
-   pthread_mutex_t * barrier_counter_lock = ((solver_info *)arg)->barrier_counter_lock;
    int * solver_x_positions = ((solver_info *)arg)->solver_x_positions; 
+   int * solver_t_positions = ((solver_info *)arg)->solver_t_positions; 
    pthread_cond_t * solver_halt = ((solver_info *)arg)->solver_halt;
    pthread_mutex_t * solver_locks = ((solver_info *)arg)->solver_locks;
+   grid * simulation = ((solver_info *)arg)->simulation;
 
    //copy the grid info
-   grid * simulation = ((solver_info *)arg)->simulation;
    int xmin = simulation->nx+1;   //start from x=-Nx*Delta
    int xmax = simulation->Ntotal;
    int tmin = 1;
@@ -67,13 +53,9 @@ inline void * solver_wrapper(void * arg)
    int nx = simulation->nx;
    W = simulation->w0*I+0.5*simulation->Gamma;  // W defined in grid.h
 
-   //a temporary variable for the previous solver's position
-   int temp;
-
-   //initialize solver position
-   pthread_mutex_lock(&solver_locks[id]);
-   solver_x_positions[id]=xmin;
-   pthread_mutex_unlock(&solver_locks[id]);
+   int previous_x, previous_t;               //previous solver's positions
+   int previous_id = (id==0 ? Nth-1 : id-1); //previous solver's id
+   int next_id = (id==Nth-1 ? 0 : id+1);     //next solver's id
 
    for(int j=tmin + id; j<tmax+id; j+=Nth)
    {
@@ -84,59 +66,35 @@ inline void * solver_wrapper(void * arg)
        for(int i=xmin; i<xmax; i++) //start from x=-Nx*Delta
        {
           //march each (delayed) thread within range one step in x simultaneously; see paper
-          if(id!=0)
+          if(j>tmin)
           {
-	     pthread_mutex_lock(&solver_locks[id-1]);
-   	     temp = solver_x_positions[id-1];
-             while(temp-i<nx && temp<xmax)
+	     pthread_mutex_lock(&solver_locks[previous_id]);
+   	     previous_x = solver_x_positions[previous_id];
+   	     previous_t = solver_t_positions[previous_id];
+             while(j>previous_t && previous_x-i<nx && previous_x<xmax)
              {
-	        pthread_cond_wait(&solver_halt[id], &solver_locks[id-1]);
-                temp = solver_x_positions[id-1];
+	        pthread_cond_wait(&solver_halt[id], &solver_locks[previous_id]);
+                previous_x = solver_x_positions[previous_id];
+                previous_t = solver_t_positions[previous_id];
              }
-	     pthread_mutex_unlock(&solver_locks[id-1]);
+	     pthread_mutex_unlock(&solver_locks[previous_id]);
           }
-	  solver(j, i, simulation); //TODO: use mutex to enforce memory barrier??
+	  solver(j, i, simulation); 
 
 	  //increment the current position and wake up the next solver if it is waiting
           pthread_mutex_lock(&solver_locks[id]);
           solver_x_positions[id]++;
           pthread_mutex_unlock(&solver_locks[id]);
-	  if(id<Nth-1)
-	     pthread_cond_signal(&solver_halt[id+1]);
+	  pthread_cond_signal(&solver_halt[next_id]);
        }
 
-       //barrier begins
-       pthread_mutex_lock(barrier_counter_lock);
-       (*barrier_counter)++;
-       if((*barrier_counter)==Nth) //the last guy resets all solver positions and then wakes up everybody
-       {
-          //reset solver positions
-          for(int th=0; th<Nth; th++)
-	  {
-             pthread_mutex_lock(&solver_locks[th]);
-             solver_x_positions[th]=xmin;
-             pthread_mutex_unlock(&solver_locks[th]);
-	  }
-
-	  //reset the counter 
-	  *barrier_counter=0;
-
-          pthread_cond_broadcast(barrier_cond);
-       }
-       else //others go to sleep
-       {
-          pthread_cond_wait(barrier_cond, barrier_counter_lock);
-       }
-       pthread_mutex_unlock(barrier_counter_lock);
-       //barrier ends
+       //update the current position
+       pthread_mutex_lock(&solver_locks[id]);
+       solver_x_positions[id]=xmin;
+       solver_t_positions[id]+=Nth;
+       pthread_mutex_unlock(&solver_locks[id]);
+       pthread_cond_signal(&solver_halt[next_id]);
    }
-
-   //the last barrier in case some threads end earlier while others are still working
-   pthread_mutex_lock(barrier_counter_lock);
-   (*barrier_counter)++;
-   if((*barrier_counter)==Nth)
-      pthread_cond_broadcast(barrier_cond);
-   pthread_mutex_unlock(barrier_counter_lock);
 
    return NULL;
 }

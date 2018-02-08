@@ -51,45 +51,32 @@ int main(int argc, char **argv)
      pthread_t thread_id[Nth];
      solver_info thread_id_list[Nth];
 
-     int barrier_counter = 0;
-     pthread_cond_t barrier_cond;
-     pthread_cond_init(&barrier_cond, NULL);
-     pthread_mutex_t barrier_counter_lock;
-     pthread_mutex_init(&barrier_counter_lock, NULL);
-
-     //initiallize an array to record the current x-positions of the solvers
-     //the array will be locked 
+     //initiallize arrays to record the current positions of the solvers
+     //which will be locked 
      int solver_x_positions[Nth];
+     int solver_t_positions[Nth];
      pthread_cond_t solver_halt[Nth];
      pthread_mutex_t solver_locks[Nth];
-     //TODO: malloc check
-     //volatile int * solver_x_positions = malloc(Nth * sizeof(*solver_x_positions));
-     //if(!solver_x_positions)
-     //{
-     //   fprintf(stderr, "%s: malloc fails, abort.\n", __func__);
-     //   exit(EXIT_FAILURE);
-     //}
-     //pthread_cond_t * solver_halt = malloc(Nth * sizeof(*solver_halt));
-     //pthread_mutex_t * solver_locks = malloc(Nth * sizeof(*solver_locks));
 
      printf("FDTD: %i threads will be used.\n", Nth);
 
      //initialize pthreads
      for(int i=0; i < Nth; i++)
      {
+	 //initialize arrays
+	 solver_x_positions[i] = simulation->nx+1;
+	 solver_t_positions[i] = 1+i;
+         pthread_cond_init(&solver_halt[i], NULL);
+         pthread_mutex_init(&solver_locks[i], NULL);
+
+	 //initialize thread arguments
          thread_id_list[i].id  = i;
          thread_id_list[i].Nth = Nth;
-         thread_id_list[i].simulation = simulation;
-
-         thread_id_list[i].barrier_counter = &barrier_counter;
-         thread_id_list[i].barrier_cond = &barrier_cond;
-         thread_id_list[i].barrier_counter_lock = &barrier_counter_lock;
-
          thread_id_list[i].solver_x_positions = solver_x_positions;
-         pthread_cond_init(&solver_halt[i], NULL);
+         thread_id_list[i].solver_t_positions = solver_t_positions;
          thread_id_list[i].solver_halt = solver_halt;
-         pthread_mutex_init(&solver_locks[i], NULL);
          thread_id_list[i].solver_locks = solver_locks;
+         thread_id_list[i].simulation = simulation;
      }
    #endif
    
@@ -99,10 +86,7 @@ int main(int argc, char **argv)
    clock_t clock_start, clock_end;
    clock_start = clock();
    #ifdef _POSIX_THREADS
-     //for timing
-     double start = getRealTime();
-     //struct timespec start, end;
-     //clock_gettime(CLOCK_MONOTONIC, &start);
+     double start = getRealTime(); //for timing
    #endif
 
    //simulation starts
@@ -120,19 +104,17 @@ int main(int argc, char **argv)
    #ifdef _POSIX_THREADS
      double end = getRealTime();
      printf("FDTD: simulation ends, getRealTime measures: %lf s\n", end - start);
-     //clock_gettime(CLOCK_MONOTONIC, &end);
-     //double elapsed = (end.tv_sec - start.tv_sec);
-     //elapsed += (end.tv_nsec - start.tv_nsec) / 1000000000.0;
-     //printf("FDTD: simulation ends, clock_gettime elapsd: %f s\n", elapsed);
      
-     // //TODO: clean up
-     // free((void *)solver_x_positions);
+     //clean up
+     for(int i=0; i < Nth; i++)
+     {
+	pthread_cond_destroy(&solver_halt[i]);
+	pthread_mutex_destroy(&solver_locks[i]);
+     }
    #endif
    clock_end = clock();
    double cpu_time_used = ((double) (clock_end - clock_start)) / CLOCKS_PER_SEC;
    printf("FDTD: simulation ends, clock time elapsd: %f s\n", cpu_time_used);
-   //  printf("FDTD: (part 1 take in total: %f s)\n", timing[0]);
-   //  printf("FDTD: (part 2 take in total: %f s)\n", timing[1]);
 
 
 //   printf("FDTD: writing results to files...\n");// fflush(stdout);
