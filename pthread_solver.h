@@ -84,21 +84,18 @@ inline void * solver_wrapper(void * arg)
        for(int i=xmin; i<xmax; i++) //start from x=-Nx*Delta
        {
           //march each (delayed) thread within range one step in x simultaneously; see paper
-          if(xmin<=i && i<xmax && j<tmax)
+          if(id!=0)
           {
-             if(id!=0)
+	     pthread_mutex_lock(&solver_locks[id-1]);
+   	     temp = solver_x_positions[id-1];
+             while(temp-i<nx && temp<xmax)
              {
-		pthread_mutex_lock(&solver_locks[id-1]);
-   	        temp = solver_x_positions[id-1];
-                while(temp-i<nx && temp<xmax)
-                {
-		   pthread_cond_wait(&solver_halt[id], &solver_locks[id-1]);
-                   temp = solver_x_positions[id-1];
-                }
-		pthread_mutex_unlock(&solver_locks[id-1]);
+	        pthread_cond_wait(&solver_halt[id], &solver_locks[id-1]);
+                temp = solver_x_positions[id-1];
              }
-	     solver(j, i, simulation); //TODO: use mutex to enforce memory barrier??
+	     pthread_mutex_unlock(&solver_locks[id-1]);
           }
+	  solver(j, i, simulation); //TODO: use mutex to enforce memory barrier??
 
 	  //increment the current position and wake up the next solver if it is waiting
           pthread_mutex_lock(&solver_locks[id]);
