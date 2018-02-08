@@ -72,7 +72,7 @@ inline void * solver_wrapper(void * arg)
 
    //initialize solver position
    pthread_mutex_lock(&solver_locks[id]);
-   solver_x_positions[id]=xmin-id*nx;
+   solver_x_positions[id]=xmin;
    pthread_mutex_unlock(&solver_locks[id]);
 
    for(int j=tmin + id; j<tmax+id; j+=Nth)
@@ -81,7 +81,7 @@ inline void * solver_wrapper(void * arg)
        if(j>=tmax)
           break;
 
-       for(int i=xmin-id*nx; i<xmax+(Nth-id-1)*nx; i++) //start from x=-Nx*Delta
+       for(int i=xmin; i<xmax; i++) //start from x=-Nx*Delta
        {
           //march each (delayed) thread within range one step in x simultaneously; see paper
           if(xmin<=i && i<xmax && j<tmax)
@@ -117,7 +117,7 @@ inline void * solver_wrapper(void * arg)
           for(int th=0; th<Nth; th++)
 	  {
              pthread_mutex_lock(&solver_locks[th]);
-             solver_x_positions[th]=xmin-th*nx;
+             solver_x_positions[th]=xmin;
              pthread_mutex_unlock(&solver_locks[th]);
 	  }
 
