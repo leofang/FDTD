@@ -90,6 +90,7 @@ int main(int argc, char **argv)
       for(int i=0; i < Nth; i++)
           pthread_join( thread_id[i], NULL);
    #else //single thread
+      W = simulation->w0*I+0.5*simulation->Gamma; //W defined in grid.h
       for(int j=1; j<simulation->Ny; j++) //start from t=1*Delta
       {
 	  for(int i=simulation->nx+1; i<simulation->Ntotal; i++) //start from x=-Nx*Delta
