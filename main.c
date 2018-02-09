@@ -19,7 +19,7 @@
   #include <unistd.h> //for execv
 #endif
 //  double timing[2]={0};
- 
+double getRealTime(); 
 
 int main(int argc, char **argv)
 {
@@ -83,6 +83,7 @@ int main(int argc, char **argv)
    clock_start = clock();
    #ifdef _OPENMP
      double omp_start = omp_get_wtime();
+     double start=getRealTime();
      int dummy = 0; //avoid compiler loop optimization
    #endif
 
@@ -122,19 +123,22 @@ int main(int argc, char **argv)
 	       }
                #pragma omp atomic
 	       solver_x_positions[id]++;
+               //#pragma omp flush
+               #pragma omp barrier
              #else
                solver(j, i, simulation);
              #endif
          }
-         #pragma omp barrier
      }
    #ifdef _OPENMP
      }
    #endif
 
    #ifdef _OPENMP
+     double end = getRealTime();
      double omp_end = omp_get_wtime(); // stop the timers
      printf("FDTD: simulation ends, OpenMP time elapsd: %f s\n", omp_end - omp_start);
+     printf("FDTD: simulation ends, getRealTime time elapsd: %f s\n", end - start);
      for(int i=0; i<Nth; i++)
      {
         omp_destroy_lock(&position_locks[i]);
