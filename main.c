@@ -10,18 +10,14 @@
 
 #include <math.h>
 #include <time.h>
-//#include <time.h>   //for clock_gettime
 #include "grid.h"
 #include "kv.h"
 #include "dynamics.h"
 #include "NM_measure.h"
 #include "pthread_solver.h"
 
-//#ifndef NTHREADS
-//#define NTHREADS 4
-//#endif
-//  double timing[2]={0};
 double getRealTime(); //defined in getRealTime.c
+
 
 int main(int argc, char **argv)
 {
@@ -37,7 +33,7 @@ int main(int argc, char **argv)
    printf("See LICENSE or http://www.wtfpl.net/ for more details.\n");
    printf("Copyright (C) 2018 Leo Fang\n\n");
 
-   #ifdef _POSIX_THREADS
+   #ifdef __FDTD_PTHREAD_SUPPORT__
       printf("FDTD: the executable is compiled with pthreads, so it will be multi-threaded.\n");
    #else
       printf("FDTD: the executable is single-threaded.\n");
@@ -46,7 +42,7 @@ int main(int argc, char **argv)
    grid * simulation = initialize_grid(argv[1]);
 //   printf("\033[F\033[2KFDTD: preparing the grid...Done!\n");
 
-   #ifdef _POSIX_THREADS
+   #ifdef __FDTD_PTHREAD_SUPPORT__
      int Nth = simulation->Nth;
      pthread_t thread_id[Nth];
      solver_info thread_id_list[Nth];
@@ -85,26 +81,31 @@ int main(int argc, char **argv)
    // initialize time measurement 
    clock_t clock_start, clock_end;
    clock_start = clock();
-   #ifdef _POSIX_THREADS
-     double start = getRealTime(); //for timing
-   #endif
+   double start = getRealTime();
 
    //simulation starts
-   #ifdef _POSIX_THREADS
+   #ifdef __FDTD_PTHREAD_SUPPORT__
       for(int i=0; i < Nth; i++)
           pthread_create( &thread_id[i], NULL, solver_wrapper, (void *)&thread_id_list[i]);
       for(int i=0; i < Nth; i++)
           pthread_join( thread_id[i], NULL);
-   #else
-      //TODO
-      //solver_wrapper(thread_id_list[0]);
-      //for(int i=)
+   #else //single thread
+      for(int j=1; j<simulation->Ny; j++) //start from t=1*Delta
+      {
+	  for(int i=simulation->nx+1; i<simulation->Ntotal; i++) //start from x=-Nx*Delta
+	  {
+	     solver(j, i, simulation);
+	  }
+      }
    #endif
 
-   #ifdef _POSIX_THREADS
-     double end = getRealTime();
-     printf("FDTD: simulation ends, getRealTime measures: %lf s\n", end - start);
+   double end = getRealTime();
+   clock_end = clock();
+   double cpu_time_used = ((double) (clock_end - clock_start)) / CLOCKS_PER_SEC;
+   printf("FDTD: simulation ends, solver spent: %f s (getRealTime)\n", end - start);
+   printf("FDTD: simulation ends, solver spent: %f s (clock)\n", cpu_time_used);
      
+   #ifdef __FDTD_PTHREAD_SUPPORT__ 
      //clean up
      for(int i=0; i < Nth; i++)
      {
@@ -112,10 +113,6 @@ int main(int argc, char **argv)
 	pthread_mutex_destroy(&solver_locks[i]);
      }
    #endif
-   clock_end = clock();
-   double cpu_time_used = ((double) (clock_end - clock_start)) / CLOCKS_PER_SEC;
-   printf("FDTD: simulation ends, clock time elapsd: %f s\n", cpu_time_used);
-
 
 //   printf("FDTD: writing results to files...\n");// fflush(stdout);
 //   print_initial_condition(simulation);
@@ -123,6 +120,7 @@ int main(int argc, char **argv)
 //   printf("******************************************\n");
 //   print_psi(simulation);
 //   print_grid(simulation);
+
    if(simulation->save_psi)
    {
       printf("FDTD: saving the wavefunction psi...\n");
