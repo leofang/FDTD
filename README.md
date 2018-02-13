@@ -3,24 +3,24 @@ This code is intended to solve 1+1D complex-valued, delay PDE which emerges in w
 Due to the nature of the delay PDE, the FDTD solver marches in a space-then-time way: ![](doc/FDTD_marching.gif)
 
 ## Requirements
-1. Single-thread mode: 
+1. Single-thread mode:  
   None. This code is written in pure C and conforms the gnu99 standard, so it can be compiled on any modern OS with a C compiler that conforms C99. Tested with gcc on Linux and clang on Mac. Depending on the grid size, however, the code can be highly memory- and storage-demanding; see below.
 
 2. Multi-thread mode (default):
   - pthreads
-  - OpenMP  
-  Multiple solvers are supported by POSIX Threads (pthreads); see the Parallelization section below. Other supporting functions are parallelized using OpenMP when possible.
+  - OpenMP (TODO)
+  Multiple solvers are supported by POSIX Threads (pthreads); see the [Parallelization](#Parallelization) section below. 
 
 ## Features
-* Fast and efficient
-* Valgrind-clean (no memory leak)
 * Proof of concept for numerically solving a PDE with delay in both dimensions using FDTD
 * Proof of concept for solving a delay PDE parallelly 
+* Fast and efficient
+* Valgrind-clean (no memory leak)
 
 ## Installation
 A makefile is provided. After cloning the git repo or downloading the source code, simply type `make` in the same folder to compile, and an executable named `FDTD` will be generated. Note that the generated excutable has multi-thread support enabled by default. To build a single-thread version (so that overhead due to threading libraries can be avoided), type the following command instead:
 ```bash
-make CFLAGS="-D__FDTD_NO_PTHREAD_SUPPORT__ -D__FDTD_NO_OPENMP_SUPPORT__"
+make CFLAGS="-D__FDTD_NO_PTHREAD_SUPPORT__"
 ```
 
 ## Usage
