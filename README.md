@@ -9,7 +9,7 @@ Due to the nature of the delay PDE, the FDTD solver marches in a space-then-time
 2. Multi-thread mode (default):  
   - pthreads
   - OpenMP (TODO)  
-  Multiple solvers are supported by POSIX Threads (pthreads); see the [Parallelization](#Parallelization) section below. 
+  Multiple solvers are supported by POSIX Threads (pthreads); see the [Parallelization](#parallelization) section below. 
 
 ## Features
 * Proof of concept for numerically solving a PDE with delay in both dimensions using FDTD
