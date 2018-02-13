@@ -66,7 +66,7 @@ A Mathematica notebook is provided in the `utilities` folder for simple plotting
 ![](doc/g2_k0a_0.5pi_on.gif) ![](doc/g2_k0a_0.5pi_off_-1Gamma.gif)
 
 ## Parallelization
-As mentioned, multiple solvers can co-exist if compiled with and linked to pthreads. The number of threads can be specified using the parameter `Nth`. The key idea is that the delay PDE permits a "cyclic lag" relation among the solvers; that is, solver #2 must be lagged behined #1 by one temporal step and at least `nx` spatial steps, and similarly #3 is lagged behind #2, #4 behind #3, etc. Finally, this relation is "wrapped around", so #1 will be lagged behind #Nth if it's done the job. See the schematic animation below, which assumes each solver is synchronized at every step (they are actually not because it'd be rather inefficient), and the [documentation](doc/FDTD_JORS_style.pdf). 
+As mentioned, multiple solvers can co-exist if compiled with and linked to pthreads. The number of threads can be specified using the parameter `Nth`. The key idea is that the delay PDE permits a "cyclic lag" relation among the solvers; that is, solver #2 must be lagged behined #1 by one temporal step and at least `nx` spatial steps, and similarly #3 is lagged behind #2, #4 behind #3, etc. Finally, this relation is "wrapped around", so #1 will be lagged behind #Nth if it's done the job. See the schematic animation below, which assumes all solvers are synchronized at every step (they are actually not because it'd be rather inefficient), and the [documentation](doc/FDTD_JORS_style.pdf). 
 ![](doc/FDTD_marching_multithread.gif)
 
 ## License

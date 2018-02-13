@@ -9,12 +9,13 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include "kv.h"
 #include "grid.h"
 #include "special_function.h"
 #include "dynamics.h"
-#include <string.h>
 #include "NM_measure.h"
+double getRealTime(); //defined in getRealTime.c
 
 
 //This function returns the normalization constant A for the two-photon initial state used for init_cond=3
@@ -229,7 +230,6 @@ void boundary_condition(grid * simulation)
     simulation->psix0_x_size = simulation->nx+1;
     simulation->psix0_y_size = 0;
 
-    int progress = 0;
     for(int j=0; j<simulation->Ny; j++)
     {
         simulation->psix0[j] = calloc(simulation->nx+1, sizeof(*simulation->psix0[j])); 
@@ -241,40 +241,39 @@ void boundary_condition(grid * simulation)
         simulation->psix0_y_size++;
     }
 
+    double start = getRealTime();
+    #ifdef __FDTD_OPENMP_SUPPORT__
+      #pragma omp parallel
+      {
+         omp_set_num_threads(simulation->Nth);
+         #pragma omp for collapse(2)
+    #endif
     for(int j=0; j<simulation->psix0_y_size; j++)
     {
-        switch(simulation->init_cond)
+        for(int i=0; i<simulation->psix0_x_size; i++)
 	{
-	   case 1: { //two-photon plane wave
-                 for(int i=0; i<simulation->psix0_x_size; i++)
-                     simulation->psix0[j][i] = plane_wave_BC(j, i, simulation);
-	      }
-	      break;
-	   case 2: { //single-photon exponential wavepacket
-                 for(int i=0; i<simulation->psix0_x_size; i++)
-                     simulation->psix0[j][i] = exponential_BC(j, i, simulation);
-	      }
-	      break;
-	   case 3: { //two-photon exponential wavepacket
-                 for(int i=0; i<simulation->psix0_x_size; i++)
-                     simulation->psix0[j][i] = two_exponential_BC(j, i, simulation);
-	      }
-	      break;
-	   default: { //bad input
-              fprintf(stderr, "%s: invalid option. Abort!\n", __func__);
-              exit(EXIT_FAILURE);
-	      } 
-        }
-
-        if(j%(simulation->Ny/10)==0)
-        {
-            printf("%s: %i%% prepared...\r", __func__, progress*10); fflush(stdout);
-            progress++;
-        }
+           switch(simulation->init_cond)
+	   {
+	      case 1: { //two-photon plane wave
+                        simulation->psix0[j][i] = plane_wave_BC(j, i, simulation); }
+	         break;
+	      case 2: { //single-photon exponential wavepacket
+                        simulation->psix0[j][i] = exponential_BC(j, i, simulation); }
+	         break;
+	      case 3: { //two-photon exponential wavepacket
+                        simulation->psix0[j][i] = two_exponential_BC(j, i, simulation); }
+	         break;
+	      default: { //bad input
+                 fprintf(stderr, "%s: invalid option. Abort!\n", __func__);
+                 exit(EXIT_FAILURE); }
+           }
+	}
     }
-
-    //wash out the status report
-    printf("                                                                           \r"); fflush(stdout);
+    #ifdef __FDTD_OPENMP_SUPPORT__
+      }
+    #endif
+    double end = getRealTime();
+    printf("FDTD: %s spent: %f s (getRealTime)\n", __func__, end-start);
 }
 
 
@@ -409,15 +408,19 @@ void sanity_check(grid * simulation)
           fprintf(stderr, "%s: for two different photons, k1, k2, alpha1 and alpha2 need to be specified. Abort!\n", __func__);
           exit(EXIT_FAILURE);
        }
-
     }
 
-    //calculate_NM_measure only supports well-defined (normalized) wavepackets
-    //TODO: allow init_cond=3
-    if(simulation->measure_NM && (simulation->init_cond!=2))// || simulation->init_cond!=3))
+    //calculate_NM_measure only supports well-defined (normalized) single-photon wavepacket
+    if(simulation->measure_NM && (simulation->init_cond!=2))
     {
         fprintf(stderr, "%s: to calculate lambda and mu for NM measures, set init_cond to be 2. Abort!\n", __func__);
         exit(EXIT_FAILURE);
+    }
+
+    if(simulation->Nth<=0)
+    {
+        fprintf(stderr, "%s: the number of threads (Nth) must be at least 1. Abort!\n", __func__);
+	exit(EXIT_FAILURE);
     }
 }
 

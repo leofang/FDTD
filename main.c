@@ -34,13 +34,18 @@ int main(int argc, char **argv)
    printf("Copyright (C) 2018 Leo Fang\n\n");
 
    #ifdef __FDTD_PTHREAD_SUPPORT__
-      printf("FDTD: the executable is compiled with pthreads, so it will be multi-threaded.\n");
+      printf("FDTD: the executable is compiled with pthreads, so there could be multiple solvers (depending on Nth).\n");
+      #ifdef __FDTD_OPENMP_SUPPORT__
+         printf("FDTD: the executable is compiled with OpenMP.\n");
+      #endif
    #else
       printf("FDTD: the executable is single-threaded.\n");
    #endif
+
    printf("FDTD: preparing the grid...\n");
+   //TODO: execute initialize_grid in another thread and do OpenMP there,
+   //so when it's done the OpenMP thread pool is eliminated
    grid * simulation = initialize_grid(argv[1]);
-//   printf("\033[F\033[2KFDTD: preparing the grid...Done!\n");
 
    #ifdef __FDTD_PTHREAD_SUPPORT__
      int Nth = simulation->Nth;

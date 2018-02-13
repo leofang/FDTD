@@ -15,6 +15,11 @@
 #include <stdio.h>
 #include <complex.h> 
 #include "kv.h"
+#define __FDTD_NO_OPENMP_SUPPORT__ //disable the OpenMP support for now
+#ifndef __FDTD_NO_OPENMP_SUPPORT__
+  #define __FDTD_OPENMP_SUPPORT__
+  #include <omp.h>
+#endif
 
 /* 
    Create a grid which stores the wavefunction and other relavant information.
