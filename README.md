@@ -6,9 +6,9 @@ Due to the nature of the delay PDE, the FDTD solver marches in a space-then-time
 1. Single-thread mode:  
   None. This code is written in pure C and conforms the gnu99 standard, so it can be compiled on any modern OS with a C compiler that conforms C99. Tested with gcc on Linux and clang on Mac. Depending on the grid size, however, the code can be highly memory- and storage-demanding; see below.
 
-2. Multi-thread mode (default):
+2. Multi-thread mode (default):  
   - pthreads
-  - OpenMP (TODO)
+  - OpenMP (TODO)  
   Multiple solvers are supported by POSIX Threads (pthreads); see the [Parallelization](#Parallelization) section below. 
 
 ## Features
