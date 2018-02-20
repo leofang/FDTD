@@ -175,6 +175,11 @@ int main(int argc, char **argv)
       printf("FDTD: saving absolute value of the two-photon wavefunction |chi|...\n");
       save_chi(simulation, argv[1], cabs);
    }
+   if(simulation->save_chi_map)
+   {
+      printf("FDTD: saving absolute value of the two-photon wavefunction |chi| as a 2D map...\n");
+      save_chi_map(simulation, argv[1], cabs);
+   }
    if(simulation->measure_NM)
    {
       printf("FDTD: calculating lambda and mu for NM measures...\n"); fflush(stdout);

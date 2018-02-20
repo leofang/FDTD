@@ -97,6 +97,7 @@ struct _grid
 
    //program options
    int save_chi;          //whether or not to save the two-photon wavefunction to file (default: no)
+   int save_chi_map;      //whether or not to save the two-photon wavefunction as a 2D map to file (default: no)
    int save_psi;          //whether or not to save the wavefunction to file (default: no)
    int save_psi_square_integral; //whether or not to save \int dx |psi(x,t)|^2 to file (default: no)
    int save_psi_binary;   //whether or not to save the wavefunction to binary file (default: no)
@@ -128,6 +129,7 @@ void print_psi(grid * simulation);
 void save_psi(grid * simulation, const char * filename, double (*part)(double complex));
 void save_psi_binary(grid * simulation, const char * filename);
 void save_chi(grid * simulation, const char * filename, double (*part)(double complex));
+void save_chi_map(grid * simulation, const char * filename, double (*part)(double complex));
 void save_psi_square_integral(grid * simulation, const char * filename);
 void prepare_qubit_wavefunction(grid * simulation);
 void initialize_e0(grid * simulation);

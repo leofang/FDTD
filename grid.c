@@ -310,12 +310,12 @@ void sanity_check(grid * simulation)
     }
 
     //it is meaningless if one performs the computation without saving any result
-    if(!simulation->save_chi && !simulation->save_psi && !simulation->save_psi_square_integral \
-       && !simulation->save_psi_binary && !simulation->measure_NM)
+    if(!simulation->save_chi && !simulation->save_chi_map && !simulation->save_psi\
+       && !simulation->save_psi_square_integral && !simulation->save_psi_binary && !simulation->measure_NM)
     {
         //fprintf(stderr, "%s: either save_chi or save_psi has to be 1. Abort!\n", __func__);
-        fprintf(stderr, "%s: need to specify the output options (available: save_chi, save_psi, save_psi_square_integral,\
-                         save_psi_binary, measure_NM). Abort!\n", __func__);
+        fprintf(stderr, "%s: need to specify the output options (available: save_chi, save_chi_map, save_psi, \
+	                 save_psi_square_integral, save_psi_binary, measure_NM). Abort!\n", __func__);
         exit(EXIT_FAILURE);
     }
 
@@ -482,6 +482,8 @@ grid * initialize_grid(const char * filename)
    FDTDsimulation->origin_index  = FDTDsimulation->Nx + FDTDsimulation->nx + 1;
    FDTDsimulation->save_chi      = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_chi") ? \
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_chi")) : 0); //default: off
+   FDTDsimulation->save_chi_map  = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_chi_map") ? \
+				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_chi_map")) : 0); //default: off
    FDTDsimulation->save_psi      = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi") ? \
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi")) : 0); //default: off
    FDTDsimulation->save_psi_square_integral = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi_square_integral") ? \
@@ -703,6 +705,83 @@ void save_chi(grid * simulation, const char * filename, double (*part)(double co
 
 	    if( j>=1 )
 	       temp -= simulation->psi[j-1][simulation->plus_a_index+i];
+
+            chi -= sqrt(simulation->Gamma)/2.0 * temp;
+            fprintf( f, "%.5g ", part(chi) );
+        }
+        fprintf( f, "\n");
+    }
+
+    fclose(f);
+    free(str);
+}
+
+
+//this function computes the two-photon wavefunction as a 2D map,
+//
+//     \chi (x1, x2, t=Ny-1),  //the last snapshot
+//
+//the calculation of which is done on the fly and then writes to a file, 
+//so no extra memory is allocated; the third argument "part" can be any
+//function converting a complex to a double, e.g., creal, cimag, cabs, etc.
+//STILL UNDER CONSTRUCTION!!!!!!
+void save_chi_map(grid * simulation, const char * filename, double (*part)(double complex))
+{
+    char * str = strdup(filename);
+    str = realloc(str, (strlen(filename)+19)*sizeof(char) );
+
+    if(part == &creal)
+       strcat(str, ".re_chi_map.out");
+    else if(part == &cimag)
+       strcat(str, ".im_chi_map.out");
+    else if(part == &cabs)
+       strcat(str, ".abs_chi_map.out");
+    else
+    {
+       fprintf(stderr, "%s: Warning: default filename is used.\n", __func__);
+       strcat(str, ".chi_map.out");
+    }
+
+    FILE * f = fopen(str, "w");
+
+    //determine the map size
+    int temp_1 = (int)ceil(simulation->Nx/2.0-simulation->nx/4.0);
+    int temp_2 = simulation->Ny-1-simulation->nx/2;
+    int L = (temp_1<temp_2 ? temp_1 : temp_2);
+    for(int i=0; i<=L; i+=simulation->Tstep+1) //change L to largest integer multiple of Tstep+1 for nonzero Tstep
+    {
+       if(i+simulation->Tstep+1>=L)
+       {
+          L=i; break;
+       }
+    }
+
+    //compute chi(x1, x2, t) with t=(Ny-1)*Delta:
+    //be careful: x1 & x2 here are array indices!!!
+    int j = simulation->Ny-1;
+    for(int x2=simulation->origin_index-L; x2<=simulation->origin_index+L; x2+=(simulation->Tstep+1))
+    {
+        for(int x1=simulation->origin_index-L; x1<=simulation->origin_index+L; x1+=(simulation->Tstep+1))
+        {
+            double complex chi = 0;
+	    double complex temp = 0;
+	    double regularization_x1 = (x1==simulation->minus_a_index || x1==simulation->plus_a_index?0.5:1.0);
+	    double regularization_x2 = (x2==simulation->minus_a_index || x2==simulation->plus_a_index?0.5:1.0);
+
+            if(simulation->init_cond == 1 || simulation->init_cond == 3)
+	       chi += two_photon_input(x1-simulation->origin_index-j, x2-simulation->origin_index-j, simulation);
+          
+            if( x1>=simulation->minus_a_index )
+	       temp += regularization_x1 * simulation->psi[j-x1+simulation->minus_a_index][x2-x1+simulation->minus_a_index];
+
+            if( x1>=simulation->plus_a_index )
+	       temp -= regularization_x1 * simulation->psi[j-x1+simulation->plus_a_index][x2-x1+simulation->plus_a_index];
+
+            if( x2>=simulation->minus_a_index )
+	       temp += regularization_x2 * simulation->psi[j-x2+simulation->minus_a_index][x1-x2+simulation->minus_a_index];
+
+            if( x2>=simulation->plus_a_index )
+	       temp -= regularization_x2 * simulation->psi[j-x2+simulation->plus_a_index][x1-x2+simulation->plus_a_index];
 
             chi -= sqrt(simulation->Gamma)/2.0 * temp;
             fprintf( f, "%.5g ", part(chi) );
