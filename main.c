@@ -67,8 +67,16 @@ int main(int argc, char **argv)
 	 //initialize arrays
 	 solver_x_positions[i] = simulation->nx+1;
 	 solver_t_positions[i] = 1+i;
-         pthread_cond_init(&solver_halt[i], NULL);
-         pthread_mutex_init(&solver_locks[i], NULL);
+         if(pthread_cond_init(&solver_halt[i], NULL))
+	 {
+	    fprintf(stderr, "FDTD: pthread_cond_init fails for %i-th thread, abort.\n", i);
+	    exit(EXIT_FAILURE);
+	 }
+         if(pthread_mutex_init(&solver_locks[i], NULL))
+	 {
+	    fprintf(stderr, "FDTD: pthread_mutex_init fails for %i-th thread, abort.\n", i);
+	    exit(EXIT_FAILURE);
+	 }
 
 	 //initialize thread arguments
          thread_id_list[i].id  = i;
@@ -83,7 +91,8 @@ int main(int argc, char **argv)
    
    printf("FDTD: simulation starts...\n");// fflush(stdout);
 
-   // initialize time measurement 
+   // initialize time measurement
+   getRealTime(); //set up the internal struct
    clock_t clock_start, clock_end;
    clock_start = clock();
    double start = getRealTime();
@@ -91,9 +100,20 @@ int main(int argc, char **argv)
    //simulation starts
    #ifdef __FDTD_PTHREAD_SUPPORT__
       for(int i=0; i < Nth; i++)
-          pthread_create( &thread_id[i], NULL, solver_wrapper, (void *)&thread_id_list[i]);
+      {
+          if(pthread_create( &thread_id[i], NULL, solver_wrapper, (void *)&thread_id_list[i]))
+	  {
+	     fprintf(stderr, "FDTD: pthread_create fails for %i-th thread, abort.\n", i);
+	     exit(EXIT_FAILURE);
+	  }
+      }
       for(int i=0; i < Nth; i++)
-          pthread_join( thread_id[i], NULL);
+      {
+          if(pthread_join( thread_id[i], NULL))
+	  {
+	     fprintf(stderr, "FDTD: pthread_join fails for %i-th thread,\n      attempting to proceed...\n", i);
+	  }
+      }
    #else //single thread
       W = simulation->w0*I+0.5*simulation->Gamma; //W defined in grid.h
       for(int j=1; j<simulation->Ny; j++) //start from t=1*Delta
@@ -115,8 +135,14 @@ int main(int argc, char **argv)
      //clean up
      for(int i=0; i < Nth; i++)
      {
-	pthread_cond_destroy(&solver_halt[i]);
-	pthread_mutex_destroy(&solver_locks[i]);
+	if(pthread_cond_destroy(&solver_halt[i]))
+	{
+	   fprintf(stderr, "FDTD: pthread_cond_destroy fails for %i-th thread,\n      attempting to proceed...\n", i);
+	}
+	if(pthread_mutex_destroy(&solver_locks[i]))
+	{
+	   fprintf(stderr, "FDTD: pthread_mutex_destroy fails for %i-th thread,\n      attempting to proceed...\n", i);
+	}
      }
    #endif
 

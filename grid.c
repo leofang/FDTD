@@ -128,16 +128,9 @@ void initialize_e0(grid * simulation)
             exit(EXIT_FAILURE);
         }
 
-        int progress = 0;
         for(int j=0; j<simulation->Ny; j++)
         {
             simulation->e0[j] = e0(j, simulation);
-
-            if(j%(simulation->Ny/10)==0)
-            {
-                printf("%s: %i%% prepared...\r", __func__, progress*10); fflush(stdout);
-                progress++;
-            }
         }
     }
     else //two different exponential wavepackets
@@ -150,25 +143,16 @@ void initialize_e0(grid * simulation)
             exit(EXIT_FAILURE);
         }
 
-        int progress = 0;
         for(int j=0; j<simulation->Ny; j++)
         {
 	    simulation->k = simulation->k1; simulation->alpha = simulation->alpha1;
             simulation->e0_1[j] = e0(j, simulation);
 	    simulation->k = simulation->k2; simulation->alpha = simulation->alpha2;
             simulation->e0_2[j] = e0(j, simulation);
-
-            if(j%(simulation->Ny/10)==0)
-            {
-                printf("%s: %i%% prepared...\r", __func__, progress*10); fflush(stdout);
-                progress++;
-            }
         }
     }
-    //TODO: add other I.C. here
 
-    //wash out the status report
-    //printf("                                                                           \r"); fflush(stdout);
+    //TODO: add other I.C. here
 }
 
 
@@ -182,16 +166,9 @@ void initialize_e1(grid * simulation)
         exit(EXIT_FAILURE);
     }
 
-    int progress = 0;
     for(int j=0; j<simulation->Ny; j++)
     {
         simulation->e1[j] = e1(j, simulation);
-
-        if(j%(simulation->Ny/10)==0)
-        {
-            printf("%s: %i%% prepared...\r", __func__, progress*10); fflush(stdout);
-            progress++;
-        }
     }
 }
 
