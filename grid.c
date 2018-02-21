@@ -750,7 +750,7 @@ void save_chi_map(grid * simulation, const char * filename, double (*part)(doubl
     int L = (temp_1<temp_2 ? temp_1 : temp_2);
     for(int i=0; i<=L; i+=simulation->Tstep+1) //change L to largest integer multiple of Tstep+1 for nonzero Tstep
     {
-       if(i+simulation->Tstep+1>=L)
+       if(i+simulation->Tstep+1>L)
        {
           L=i; break;
        }
