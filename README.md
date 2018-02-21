@@ -27,11 +27,11 @@ make CFLAGS="-D__FDTD_NO_PTHREAD_SUPPORT__"
 `./FDTD input_filename`, where `input_filename` is the name of the input file that specifies the input parameters, each in one line (see below).
 
 ## Input parameters
-At least 8 are required: `nx`, `Nx`, `Ny`, `Delta`, `init_cond`, `k`, `w0`, and `gamma`. The first four are simulation-related, and the rest are physics-related. The format of the input file should be one key-value pair per line, with a equal sign separating the key and the value (see the sample file [`k0a_0.5pi_on_new`](k0a_0.5pi_on_new)):
+At least 8 are required: `nx`, `Nx`, `Ny`, `Delta`, `init_cond`, `k`, `w0`, and `gamma`. The first four are simulation-related, and the rest are physics-related. The format of the input file should be one key-value pair per line, with a equal sign separating the key and the value (see the sample file [`k0a_0.5pi_on_new`](examples/k0a_0.5pi_on_new) in the `examples` folder):
 ```bash
 nx=200
 Nx=4000
-Ny=10000
+Ny=6000
 Delta=0.01
 k=1.57079632679490
 w0=1.57079632679490
@@ -40,6 +40,7 @@ save_psi=1
 save_chi=1
 init_cond=1
 Tstep=19
+Nth=4
 ```
 For futher details (e.g., the layout of the grid, decriptions for various parameters, etc) see the comments in [`grid.h`](grid.h) as well as the [documentation](doc/FDTD_JORS_style.pdf). A Python script is provided in the `utilities` folder for the ease of preparing input.
 

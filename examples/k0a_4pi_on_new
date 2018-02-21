@@ -1,0 +1,13 @@
+nx=960
+Nx=5000
+Ny=8000
+Delta=2.617993877991494E-04
+k=100
+w0=100
+gamma=5
+alpha=0.99
+save_psi_integral=1
+measure_NM=1
+init_cond=2
+Tstep=29
+Nth=4
