@@ -56,6 +56,7 @@ Other options controlling the behavior of the program can also be given; if not 
 Depending on the options, the following files will be generated: 
 * `save_psi`: `input_filename.re.out` and `input_filename.im.out` (real and imaginary parts, respectively, of the wavefunction described by the delay PDE). 
 * `save_psi_binary`: `input_filename.bin` (the entire wavefunction, complex numbers, written in a binary file).
+* `save_psi_square_integral`: `input_filename.psi_square.out` (the qubit population, \int dx |\psi(x,t)|^2, in the two-excitation sector)
 * `save_chi`: `input_filename.abs_chi.out` (absolute value of the two-photon wavefunction).
 * `measure_NM`: `input_filename.re_e0.out`, `input_filename.re_e1.out`, `input_filename.re_mu.out`, their imaginary counterparts, and `input_filename.lambda.out`; see the [documentation](doc/FDTD_JORS_style.pdf) for their meanings.
 
