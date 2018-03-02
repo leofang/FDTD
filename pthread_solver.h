@@ -10,10 +10,8 @@
 
 #ifndef __FDTD_PTHREAD_H__
 #define __FDTD_PTHREAD_H__
-#ifndef __FDTD_NO_PTHREAD_SUPPORT__
-  //default: turn on pthreads unless __FDTD_NO_PTHREAD_SUPPORT__ is explicitly given during compilation
-  #define __FDTD_PTHREAD_SUPPORT__ 
-
+#ifdef __FDTD_PTHREAD_SUPPORT__
+  //default: turn OFF pthreads unless __FDTD_PTHREAD_SUPPORT__ is explicitly given during compilation
 #include <unistd.h> //for _POSIX_THREADS
 #define _MULTI_THREADED
 #include <pthread.h>
@@ -107,5 +105,5 @@ inline void * solver_wrapper(void * arg)
    return NULL;
 }
 
-#endif //__FDTD_NO_PTHREAD_SUPPORT__
+#endif //__FDTD_PTHREAD_SUPPORT__
 #endif //__FDTD_PTHREAD_H__

@@ -75,5 +75,3 @@ As mentioned, multiple solvers can co-exist if compiled with and linked to pthre
 This code is released under the MIT license. For academic uses, *citation to **[arXiv:1707.05943](https://arxiv.org/abs/1707.05943)** and **[arXiv:1707.05946](https://arxiv.org/abs/1707.05946)** is strongly encouraged and acknowledged.* 
 
 Copyright (C) 2018 Leo Fang.
-
-This program is free software. It comes without any warranty, to the extent permitted by applicable law. You can redistribute it and/or modify it under the terms of the WTFPL, Version 2, as published by Sam Hocevar. See the accompanying LICENSE file or http://www.wtfpl.net/ for more details.

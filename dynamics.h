@@ -14,6 +14,7 @@
 #include <math.h>
 #include "grid.h"
 
+
 /* Update Jun 21, 2017: 
  * To utilize the C99 inline specifier, it is required to put the function definitions 
  * in the header file which is visible to all source files, and then to provide an 
@@ -32,31 +33,10 @@
 // j and i are the array indices psi[j][i] of the upper right corner
 inline double complex square_average(int j, int i, grid * simulation)
 {
-   if(i<1) //beyond the boundary x=-(Nx+nx+1)*Delta
-   {
-      fprintf(stderr, "Error in %s: beyond left boundary. Abort!\n", __func__);
-      exit(EXIT_FAILURE);
-   }
-
-   if(i>simulation->Ntotal-1) //beyond the boundary x=Nx*Delta
-   {
-      fprintf(stderr, "Error in %s: beyond right boundary. Abort!\n", __func__);
-      exit(EXIT_FAILURE);
-   }
-
    if(j<1) //everything is zero below t=0
       return 0;
 
-   double complex square = 0;
-
-   for(int m=j-1; m<=j; m++)
-   {
-      for(int n=i-1; n<=i; n++)
-         square += simulation->psi[m][n];
-   }
-   square/=4.;
-
-   return square;
+   return (simulation->psi[j-1][i-1]+simulation->psi[j-1][i]+simulation->psi[j][i-1]+simulation->psi[j][i])/4.;
 }
 
 
@@ -64,18 +44,6 @@ inline double complex square_average(int j, int i, grid * simulation)
 // j and i are the array indices psi[j][i] of the right end
 inline double complex bar_average(int j, int i, grid * simulation)
 {
-   if(i<1) //beyond the boundary x=-(Nx+nx+1)*Delta
-   {
-      fprintf(stderr, "Error in %s: beyond left boundary. Abort!\n", __func__);
-      exit(EXIT_FAILURE);
-   }
-
-   if(i>simulation->Ntotal-1) //beyond the boundary x=Nx*Delta
-   {
-      fprintf(stderr, "Error in %s: beyond right boundary. Abort!\n", __func__);
-      exit(EXIT_FAILURE);
-   }
-
    if(j<0) //everything is zero below t=0
       return 0;
 
@@ -123,7 +91,7 @@ inline double complex two_photon_input(double x1, double x2, grid * simulation)
 
       //TODO: add other different inputs here
       
-      default: { exit(EXIT_FAILURE); }
+      default: { /* bad input, but sanity_check ensures we never arrives here */ }
    }
 
    return chi;
@@ -131,14 +99,11 @@ inline double complex two_photon_input(double x1, double x2, grid * simulation)
 
 
 //this function calculates \int dx |\psi(x,t)|^2
+#if _OPENMP>=201307 //simd construct begins v4.0
+#pragma omp declare simd uniform(simulation), linear(j)
+#endif
 inline double psi_square_integral(int j, grid * simulation)
 {
-   if(j<0)
-   {
-      fprintf(stderr, "%s: argument j is negative (j=%i). Abort!\n", __func__, j);
-      exit(EXIT_FAILURE);
-   }
-
    double sum = 0;
    double Lambda = 0;
    double t = j*simulation->Delta;
@@ -172,15 +137,14 @@ inline double psi_square_integral(int j, grid * simulation)
 	    }
 	 }
 	 break;
-      default: { //bad input
-            fprintf(stderr, "%s: invalid option. Abort!\n", __func__);
-            exit(EXIT_FAILURE);
-         } 
+
+      default: { /* bad input, but sanity_check ensures we never arrives here */ }
    }
 
    int xmax = j + simulation->plus_a_index;
    //trapezoidal rule for x>=-a
    sum += 0.5 * pow(cabs(simulation->psi[j][simulation->minus_a_index]), 2.0);
+   #pragma omp parallel for reduction(+:sum) //reduction EXPERIMENTAL!!!
    for(int i = simulation->minus_a_index+1; i<xmax; i++)
       sum += pow(cabs(simulation->psi[j][i]), 2.0);
    sum += 0.5 * pow(cabs(simulation->psi[j][xmax]), 2.0);
@@ -191,6 +155,9 @@ inline double psi_square_integral(int j, grid * simulation)
 
 
 //core of FDTD; orginally written in main()
+#if _OPENMP>=201307 //simd construct begins v4.0
+#pragma omp declare simd uniform(simulation)
+#endif
 inline void solver(int j, int i, grid * simulation)
 {
    //points (i) right next to the 1st light cone and in tile B1, 
@@ -200,6 +167,11 @@ inline void solver(int j, int i, grid * simulation)
        || (i==j+simulation->plus_a_index+1) )
        return;
        //continue; //do nothing, as psi is already zero initailized
+
+   //#ifdef _OPENMP
+   //if( i<simulation->nx+1 || i>= simulation->Ntotal)
+   //    return; //beyond the grid range
+   //#endif
 
    //free propagation (decay included)
    simulation->psi[j][i] = (1./simulation->Delta-0.25*W)*simulation->psi[j-1][i-1]   \
