@@ -72,7 +72,7 @@ As mentioned, multiple solvers can co-exist if compiled with and linked to pthre
 ![](doc/FDTD_marching_multithread.gif)
 
 ## License
-This code is released under the [WTFPL v2](http://www.wtfpl.net). For the academic uses, *citation to **[arXiv:1707.05943](https://arxiv.org/abs/1707.05943)** and **[arXiv:1707.05946](https://arxiv.org/abs/1707.05946)** is strongly encouraged and acknowledged.* 
+This code is released under the MIT license. For academic uses, *citation to **[arXiv:1707.05943](https://arxiv.org/abs/1707.05943)** and **[arXiv:1707.05946](https://arxiv.org/abs/1707.05946)** is strongly encouraged and acknowledged.* 
 
 Copyright (C) 2018 Leo Fang.
 
