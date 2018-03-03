@@ -138,6 +138,9 @@ void prepare_qubit_wavefunction(grid * simulation);
 void initialize_e0(grid * simulation);
 void initialize_e1(grid * simulation);
 void calculate_normalization_const(grid * simulation);
+#ifdef __FDTD_OPENMP_SUPPORT__
+void initialize_OpenMP_team(grid * simulation);
+#endif
 
 // // make W = (i*w0+Gamma/2) as a global variable
 // extern double complex W;

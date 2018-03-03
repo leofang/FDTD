@@ -20,6 +20,35 @@ double getRealTime(); //defined in getRealTime.c
 extern double complex W; //declared in main.c
 
 
+#ifdef __FDTD_OPENMP_SUPPORT__
+void initialize_OpenMP_team(grid * simulation)
+{
+   int temp;
+   #pragma omp parallel
+   {
+      #pragma omp single
+      {
+         temp = omp_get_num_threads();
+      }
+   }
+
+   if(temp != simulation->Nth)
+   {
+      fprintf(stderr, "%s: OMP_NUM_THREADS is inconsistent with Nth. Using the latter...\n", __func__);
+      omp_set_num_threads(simulation->Nth);
+   }
+
+   #pragma omp parallel
+   {
+      #pragma omp single
+      {
+         printf("FDTD: Using %i threads...\n", omp_get_num_threads());
+      }
+   }
+}
+#endif
+
+
 //This function returns the normalization constant A for the two-photon initial state used for init_cond=3
 void calculate_normalization_const(grid * simulation)
 {
@@ -223,7 +252,6 @@ void boundary_condition(grid * simulation)
     #ifdef __FDTD_OPENMP_SUPPORT__
       #pragma omp parallel
       {
-         omp_set_num_threads(simulation->Nth);
          #pragma omp for collapse(2)
     #endif
     for(int j=0; j<simulation->psix0_y_size; j++)
@@ -519,6 +547,10 @@ grid * initialize_grid(const char * filename)
 
    //check the validity of parameters
    sanity_check(FDTDsimulation);
+
+   #ifdef __FDTD_OPENMP_SUPPORT__
+   initialize_OpenMP_team(FDTDsimulation);
+   #endif
 
    //calculate the normalization constant
    if(FDTDsimulation->init_cond==3) calculate_normalization_const(FDTDsimulation);
