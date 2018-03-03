@@ -14,11 +14,11 @@
 #include "kv.h"
 #include "dynamics.h"
 #include "NM_measure.h"
-#ifdef _OPENMP
-  #include <omp.h>
-#endif
+#include "pthread_solver.h"
 
-double getRealTime(); 
+double getRealTime(); //defined in getRealTime.c
+double complex W;     //W=I*w0+0.5*Gamma, to be accessed by multiple threads
+
 
 int main(int argc, char **argv)
 {
@@ -29,10 +29,11 @@ int main(int argc, char **argv)
    }
    
    printf("FDTD: solving 1+1D delay PDE\n");
-   //printf("https://arxiv.org/abs/1707.05943v1, https://github.com/leofang/FDTD\n");
-   printf("This code is released under the WTFPL without any warranty.\n");
-   printf("See LICENSE or http://www.wtfpl.net/ for more details.\n");
+   printf("This code is released under the MIT license, see LICENSE for more details.\n");
    printf("Copyright (C) 2018 Leo Fang\n\n");
+   //printf("https://arxiv.org/abs/1707.05943v1, https://github.com/leofang/FDTD\n");
+   //printf("This code is released under the WTFPL without any warranty.\n");
+   //printf("See LICENSE or http://www.wtfpl.net/ for more details.\n");
 
    //4 possibilities
    #ifdef __FDTD_OPENMP_SUPPORT__
@@ -50,21 +51,61 @@ int main(int argc, char **argv)
    #endif
    
    printf("FDTD: preparing the grid...\n");
+   //TODO: execute initialize_grid in another thread and do OpenMP there,
+   //so when it's done the OpenMP thread pool can either be eliminated or handed out
    grid * simulation = initialize_grid(argv[1]);
-//   printf("\033[F\033[2KFDTD: preparing the grid...Done!\n");
 
-   // W defined in grid.h
-   W = simulation->w0*I+0.5*simulation->Gamma;
+   #ifdef __FDTD_PTHREAD_SUPPORT__ //for pthread solvers
+     int Nth = simulation->Nth;
+     pthread_t thread_id[Nth];
+     solver_info thread_id_list[Nth];
 
-   //grid dimension in x and t
-   int delay = simulation->nx;
-   int xmin = delay+1;   //start from x=-Nx*Delta
-   int xmax = simulation->Ntotal;
-   int tmax = simulation->Ny;
+     //initiallize arrays to record the current positions of the solvers
+     //which will be locked 
+     int solver_x_positions[Nth];
+     int solver_t_positions[Nth];
+     pthread_cond_t solver_halt[Nth];
+     pthread_mutex_t solver_locks[Nth];
+
+     printf("FDTD: %i threads will be used.\n", Nth); //TODO: re-organize this
+
+     //initialize pthreads
+     for(int i=0; i < Nth; i++)
+     {
+	 //initialize arrays
+	 solver_x_positions[i] = simulation->nx+1;
+	 solver_t_positions[i] = 1+i;
+         if(pthread_cond_init(&solver_halt[i], NULL))
+	 {
+	    fprintf(stderr, "FDTD: pthread_cond_init fails for %i-th thread, abort.\n", i);
+	    exit(EXIT_FAILURE);
+	 }
+         if(pthread_mutex_init(&solver_locks[i], NULL))
+	 {
+	    fprintf(stderr, "FDTD: pthread_mutex_init fails for %i-th thread, abort.\n", i);
+	    exit(EXIT_FAILURE);
+	 }
+
+	 //initialize thread arguments
+         thread_id_list[i].id  = i;
+         thread_id_list[i].Nth = Nth;
+         thread_id_list[i].solver_x_positions = solver_x_positions;
+         thread_id_list[i].solver_t_positions = solver_t_positions;
+         thread_id_list[i].solver_halt = solver_halt;
+         thread_id_list[i].solver_locks = solver_locks;
+         thread_id_list[i].simulation = simulation;
+     }
+   #else //for either openmp or single-thread solver
+     //grid dimension in x and t
+     int xmin = simulation->nx+1;   //start from x=-Nx*Delta
+     int xmax = simulation->Ntotal;
+     int tmax = simulation->Ny;
+   #endif
 
    printf("FDTD: simulation starts...\n");// fflush(stdout);
 
-   // initialize time measurement 
+   // initialize time measurement
+   getRealTime(); //set up the internal struct
    clock_t clock_start, clock_end;
    double start, end;
    clock_start = clock();
@@ -75,7 +116,23 @@ int main(int argc, char **argv)
    #endif
 
    //simulation starts
-   #ifdef _OPENMP
+   #ifdef __FDTD_PTHREAD_SUPPORT__ //using pthread solvers
+      for(int i=0; i < Nth; i++)
+      {
+          if(pthread_create( &thread_id[i], NULL, solver_wrapper, (void *)&thread_id_list[i]))
+	  {
+	     fprintf(stderr, "FDTD: pthread_create fails for %i-th thread, abort.\n", i);
+	     exit(EXIT_FAILURE);
+	  }
+      }
+      for(int i=0; i < Nth; i++)
+      {
+          if(pthread_join( thread_id[i], NULL))
+	  {
+	     fprintf(stderr, "FDTD: pthread_join fails for %i-th thread,\n      attempting to proceed...\n", i);
+	  }
+      }
+   #elif defined _OPENMP //using wavefront approach
      #pragma omp parallel
      {
         //region 1: x<=-a
@@ -87,9 +144,7 @@ int main(int argc, char **argv)
             {
                int i = k-j+xmin;
                if(i>=xmin && i<=simulation->minus_a_index)
-               {
                   solver(j, i, simulation);
-               }
             }
         }
   
@@ -99,9 +154,7 @@ int main(int argc, char **argv)
            for(int j=1; j<tmax; j++) //start from t=1*Delta
            {
                for(int i=simulation->minus_a_index+1; i<=simulation->plus_a_index; i++)
-               {
                   solver(j, i, simulation);
-               }
            }
         }
 
@@ -114,19 +167,15 @@ int main(int argc, char **argv)
             {
                 int i = k-j+simulation->plus_a_index+1;
                 if(i>=simulation->plus_a_index+1 && i<xmax)
-                {
                    solver(j, i, simulation);
-                }
             }
         }
      }
-   #else
+   #else //single-thread version
      for(int j=1; j<tmax; j++) //start from t=1*Delta
      {
          for(int i=xmin; i<xmax; i++) //start from x=-Nx*Delta
-         {
-               solver(j, i, simulation);
-         }
+            solver(j, i, simulation);
      }
    #endif
 
@@ -138,6 +187,21 @@ int main(int argc, char **argv)
    printf("FDTD: simulation ends, getRealTime time elapsd: %f s\n", end - start);
    clock_end = clock();
    printf("FDTD: simulation ends, clock time elapsd: %f s\n", ((double) (clock_end - clock_start)) / CLOCKS_PER_SEC);
+
+   #ifdef __FDTD_PTHREAD_SUPPORT__ 
+     //clean up
+     for(int i=0; i < Nth; i++)
+     {
+	if(pthread_cond_destroy(&solver_halt[i]))
+	{
+	   fprintf(stderr, "FDTD: pthread_cond_destroy fails for %i-th thread,\n      attempting to proceed...\n", i);
+	}
+	if(pthread_mutex_destroy(&solver_locks[i]))
+	{
+	   fprintf(stderr, "FDTD: pthread_mutex_destroy fails for %i-th thread,\n      attempting to proceed...\n", i);
+	}
+     }
+   #endif
 
 //   printf("FDTD: writing results to files...\n");// fflush(stdout);
 //   print_initial_condition(simulation);
@@ -179,6 +243,14 @@ int main(int argc, char **argv)
       save_chi(simulation, argv[1], cabs);
       end = getRealTime();
       printf("FDTD: chi saved, getRealTime time elapsd: %f s\n", end - start);
+   }
+   if(simulation->save_chi_map)
+   {
+      printf("FDTD: saving absolute value of the two-photon wavefunction |chi| as a 2D map...\n");
+      start = getRealTime();
+      save_chi_map(simulation, argv[1], cabs);
+      end = getRealTime();
+      printf("FDTD: chi map saved, getRealTime time elapsd: %f s\n", end - start);
    }
    if(simulation->measure_NM)
    {

@@ -7,11 +7,12 @@
 # http://www.wtfpl.net/ for more details.
 
 CC=gcc
-override CFLAGS+=-Wall -std=gnu99 -pedantic -O3 -pthread #-ggdb3 -Werror
+override CFLAGS+=-fopenmp -Wall -std=gnu99 -pedantic -O3 -pthread #-ggdb3 -Werror
+#override CFLAGS+=-Wa,-q
 SRCS=$(wildcard *.c)
 OBJS=$(patsubst %.c, %.o, $(SRCS))
 PROGRAM=FDTD
-LDFLAGS=-lm -pthread
+LDFLAGS=-lm -pthread -fopenmp
 
 $(PROGRAM): $(OBJS)
 	$(CC) $(CFLAGS) $(OpenMP) -o $@ $(OBJS) $(LDFLAGS)

@@ -52,7 +52,7 @@ inline void * solver_wrapper(void * arg)
    int tmin = 1;
    int tmax = simulation->Ny; 
    int nx = simulation->nx;
-   W = simulation->w0*I+0.5*simulation->Gamma;  // W defined in grid.h
+   //W = simulation->w0*I+0.5*simulation->Gamma;  // W defined in grid.h
 
    int previous_x, previous_t;               //previous solver's positions
    int previous_id = (id==0 ? Nth-1 : id-1); //previous solver's id

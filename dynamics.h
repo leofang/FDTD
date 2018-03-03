@@ -14,6 +14,7 @@
 #include <math.h>
 #include "grid.h"
 
+extern double complex W; //declared in main.c
 
 /* Update Jun 21, 2017: 
  * To utilize the C99 inline specifier, it is required to put the function definitions 
@@ -155,9 +156,11 @@ inline double psi_square_integral(int j, grid * simulation)
 
 
 //core of FDTD; orginally written in main()
-#if _OPENMP>=201307 //simd construct begins v4.0
-#pragma omp declare simd uniform(simulation)
-#endif
+//#ifndef __FDTD_PTHREAD_SUPPORT__
+  #if _OPENMP>=201307 //simd construct begins v4.0
+  #pragma omp declare simd uniform(simulation)
+  #endif
+//#endif
 inline void solver(int j, int i, grid * simulation)
 {
    //points (i) right next to the 1st light cone and in tile B1, 
