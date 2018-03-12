@@ -100,9 +100,6 @@ inline double complex two_photon_input(double x1, double x2, grid * simulation)
 
 
 //this function calculates \int dx |\psi(x,t)|^2
-#if _OPENMP>=201307 //simd construct begins v4.0
-#pragma omp declare simd uniform(simulation), linear(j)
-#endif
 inline double psi_square_integral(int j, grid * simulation)
 {
    double sum = 0;
@@ -145,7 +142,9 @@ inline double psi_square_integral(int j, grid * simulation)
    int xmax = j + simulation->plus_a_index;
    //trapezoidal rule for x>=-a
    sum += 0.5 * pow(cabs(simulation->psi[j][simulation->minus_a_index]), 2.0);
-   #pragma omp parallel for reduction(+:sum) //reduction EXPERIMENTAL!!!
+   #if _OPENMP>=201307 //simd construct begins v4.0
+   #pragma omp parallel for simd reduction(+:sum) //reduction EXPERIMENTAL!!!
+   #endif
    for(int i = simulation->minus_a_index+1; i<xmax; i++)
       sum += pow(cabs(simulation->psi[j][i]), 2.0);
    sum += 0.5 * pow(cabs(simulation->psi[j][xmax]), 2.0);

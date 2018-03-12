@@ -32,6 +32,8 @@ void initialize_OpenMP_team(grid * simulation)
       }
    }
 
+   //caveat: it could be possible that users forget to set Nth in the input,
+   //and in this case Nth is set as 1
    if(temp != simulation->Nth)
    {
       fprintf(stderr, "%s: OMP_NUM_THREADS is inconsistent with Nth. Using the latter...\n", __func__);
@@ -878,11 +880,7 @@ void save_psi_square_integral(grid * simulation, const char * filename)
     }
     else
     {
-       #if _OPENMP>=201307 //simd construct begins v4.0
-       #pragma omp parallel for simd
-       #else
        #pragma omp parallel for
-       #endif
        for(int j=0; j<Tmax; j++)
           result[j] = psi_square_integral(j, simulation);
         
