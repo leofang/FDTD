@@ -69,9 +69,9 @@ A Mathematica notebook is provided in the `utilities` folder for simple plotting
 
 ## Parallelization
 As mentioned, multiple solvers can co-exist if compiled with and linked to pthreads. The number of threads can be specified using the parameter `Nth`. The key idea is that the delay PDE permits a "cyclic lag" relation among the solvers; that is, solver #2 must be lagged behined #1 by one temporal step and at least `nx` spatial steps, and similarly #3 is lagged behind #2, #4 behind #3, etc. Finally, this relation is "wrapped around", so #1 will be lagged behind #Nth if it's done the job. See the schematic animation below, which assumes all solvers are synchronized at every step (they are actually not because it'd be rather inefficient), and the [documentation](doc/FDTD_JORS_style.pdf). 
-![](doc/FDTD_marching_multithread.gif)
+![](doc/FDTD_marching_pthread.gif)
 
 ## License
-This code is released under the MIT license. For academic uses, *citation to **[arXiv:1707.05943](https://arxiv.org/abs/1707.05943)** and **[arXiv:1707.05946](https://arxiv.org/abs/1707.05946)** is strongly encouraged and acknowledged.* 
+This code is released under the MIT license. For the academic uses, *citation to **[arXiv:1707.05943](https://arxiv.org/abs/1707.05943)** and **[arXiv:1707.05946](https://arxiv.org/abs/1707.05946)** is strongly encouraged and acknowledged.* 
 
 Copyright (C) 2018 Leo Fang.
