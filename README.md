@@ -6,10 +6,10 @@ Due to the nature of the delay PDE, the FDTD solver marches in a space-then-time
 1. Single-thread mode:  
   None. This code is written in pure C and conforms the gnu99 standard, so it can be compiled on any modern OS with a C compiler that conforms C99. Tested with gcc on Linux and clang on Mac. Depending on the grid size, however, the code can be highly memory- and storage-demanding; see below.
 
-2. Multi-thread mode (default):  
-  - pthreads
-  - OpenMP (TODO)  
-  Multiple solvers are supported by POSIX Threads (pthreads); see the [Parallelization](#parallelization) section below. 
+2. Multi-thread mode:  
+  - pthreads ("swarm" solvers)
+  - OpenMP ("wavefront" solvers + loop parallelization; turned on as default)
+  Multiple solvers are supported by OpenMP or POSIX Threads (pthreads); see the [Parallelization](#parallelization) section below. 
 
 ## Features
 * Proof of concept for numerically solving a PDE with delay in both dimensions using FDTD
@@ -18,10 +18,11 @@ Due to the nature of the delay PDE, the FDTD solver marches in a space-then-time
 * Valgrind-clean (no memory leak)
 
 ## Installation
-A makefile is provided. After cloning the git repo or downloading the source code, simply type `make` in the same folder to compile, and an executable named `FDTD` will be generated. Note that the generated excutable has multi-thread support enabled by default. To build a single-thread version (so that overhead due to threading libraries can be avoided), type the following command instead:
+A makefile is provided. After cloning the git repo or downloading the source code, simply type `make` in the same folder to compile, and an executable named `FDTD` will be generated. Note that the generated excutable has multi-thread support (by linking to OpenMP) enabled by default. To build a single-thread version (so that overhead due to threading libraries can be avoided), type the following command instead:
 ```bash
-make CFLAGS="-D__FDTD_NO_PTHREAD_SUPPORT__"
+make CFLAGS="-U_OPENMP"
 ```
+See the [Parallelization](#parallelization) section below for further information.
 
 ## Usage
 `./FDTD input_filename`, where `input_filename` is the name of the input file that specifies the input parameters, each in one line (see below).
@@ -68,7 +69,9 @@ A Mathematica notebook is provided in the `utilities` folder for simple plotting
 ![](doc/g2_k0a_0.5pi_on.gif) ![](doc/g2_k0a_0.5pi_off_-1Gamma.gif)
 
 ## Parallelization
-As mentioned, multiple solvers can co-exist if compiled with and linked to pthreads. The number of threads can be specified using the parameter `Nth`. The key idea is that the delay PDE permits a "cyclic lag" relation among the solvers; that is, solver #2 must be lagged behined #1 by one temporal step and at least `nx` spatial steps, and similarly #3 is lagged behind #2, #4 behind #3, etc. Finally, this relation is "wrapped around", so #1 will be lagged behind #Nth if it's done the job. See the schematic animation below, which assumes all solvers are synchronized at every step (they are actually not because it'd be rather inefficient), and the [documentation](doc/FDTD_JORS_style.pdf). 
+As mentioned, multiple solvers can co-exist if compiled with and linked to OpenMP (default) or pthreads. The number of threads can be specified using the parameter `Nth` (note that for the OpenMP case, the environmental variable `OMP_NUM_THREADS` is purposely ignored). OpenMP is also used to parallelize loops in various places other than the solver. To turn off the OpenMP support entirely, remove all the flags `-fopenmp` from `Makefile` or use `make CFLAGS=-U_OPENMP`. To turn on the pthreads solver, use `make CFLAGS=-D__FDTD_PTHREAD_SUPPORT__`. Combination between the the two possibilities is allowed.
+
+For the OpenMP implementation, we parallelize the calculation on a given wavefront, see the description of "wavefront approach" in the [documentation](doc/FDTD_JORS_style.pdf); for the pthreads implementation, we use the "swarm approach" instead: the delay PDE permits a "cyclic lag" relation among the solvers; that is, solver #2 must be lagged behined #1 by one temporal step and at least `nx` spatial steps, and similarly #3 is lagged behind #2, #4 behind #3, etc. Finally, this relation is "wrapped around", so #1 will be lagged behind #Nth if it's done the job. See the schematic animation below, which assumes all solvers are synchronized at every step (they are actually not because it'd be rather inefficient), and the [documentation](doc/FDTD_JORS_style.pdf). 
 ![](doc/FDTD_marching_pthread.gif)
 
 ## License

@@ -346,8 +346,7 @@ void sanity_check(grid * simulation)
        && !simulation->save_psi_square_integral && !simulation->save_psi_binary && !simulation->measure_NM)
     {
         //fprintf(stderr, "%s: either save_chi or save_psi has to be 1. Abort!\n", __func__);
-        fprintf(stderr, "%s: need to specify the output options (available: save_chi, save_chi_map, save_psi, \
-                        save_psi_square_integral, save_psi_binary, measure_NM). Abort!\n", __func__);
+        fprintf(stderr, "%s: need to specify the output options (available: save_chi, save_chi_map, save_psi, save_psi_square_integral, save_psi_binary, measure_NM). Abort!\n", __func__);
         exit(EXIT_FAILURE);
     }
 
