@@ -227,6 +227,12 @@ int main(int argc, char **argv)
       save_psi_square_integral(simulation, argv[1]);
       end = getRealTime();
       printf("FDTD: psi^2 integral saved, getRealTime time elapsd: %f s\n", end - start);
+
+      //TODO: add a seperate flag for save_BIC
+      start = getRealTime();
+      save_BIC(simulation, argv[1]);
+      end = getRealTime();
+      printf("FDTD: BIC saved, getRealTime time elapsd: %f s\n", end - start);
    }
    if(simulation->save_psi_binary)
    {

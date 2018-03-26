@@ -134,6 +134,7 @@ void save_psi_binary(grid * simulation, const char * filename);
 void save_chi(grid * simulation, const char * filename, double (*part)(double complex));
 void save_chi_map(grid * simulation, const char * filename, double (*part)(double complex));
 void save_psi_square_integral(grid * simulation, const char * filename);
+void save_BIC(grid * simulation, const char * filename);
 void prepare_qubit_wavefunction(grid * simulation);
 void initialize_e0(grid * simulation);
 void initialize_e1(grid * simulation);

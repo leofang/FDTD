@@ -961,3 +961,60 @@ void check_normalization(grid * simulation)
     if(fabs(1.0-abs_psi_square-abs_chi_square)>0.01) // <1% error is acceptable
        fprintf(stderr, "FDTD: %s: *** WARNING: normalization factor deviates too much, the result may not be faithful ***\n", __func__);
 }
+
+
+//EXPERIMENTAL!!!!
+void save_BIC(grid * simulation, const char * filename)
+{
+    char * str = strdup(filename);
+    str = realloc(str, (strlen(filename)+11)*sizeof(char) );
+    strcat(str, ".BIC.out");
+
+    int Tmax = 0;
+    if(2*simulation->Nx >= 3*simulation->nx)
+       Tmax = (simulation->Ny-1 < simulation->Nx - 3*simulation->nx/2 ? simulation->Ny-1 : simulation->Nx - 3*simulation->nx/2);
+       //Tmax = simulation->Nx - 3*simulation->nx/2;
+    else
+    {
+       fprintf(stderr, "FDTD: %s: 2Nx>=3nx is not satisfied, skip this function.\n", __func__);
+       return;
+    }
+
+    FILE * f = fopen(str, "w");
+    double * psi_part = malloc(Tmax *sizeof(*psi_part));
+    double * chi_part = malloc(Tmax *sizeof(*chi_part));
+
+    if(!psi_part)
+    {
+       fprintf(stderr, "rare event: malloc fails in %s, save the result serially...\n", __func__);
+       for(int j=0; j<Tmax; j++)
+          fprintf( f, "%.10g\n", psi_square_integral(j, simulation) );
+    }
+    else
+    {
+       #pragma omp parallel for
+       for(int j=0; j<Tmax; j++)
+          psi_part[j] = psi_square_integral(j, simulation);
+    }
+
+    if(!chi_part)
+    {
+       fprintf(stderr, "rare event: malloc fails in %s, save the result serially...\n", __func__);
+       for(int j=0; j<Tmax; j++)
+          fprintf( f, "%.10g\n", chi_square_integral(j, simulation) );
+    }
+    else
+    {
+       #pragma omp parallel for
+       for(int j=0; j<Tmax; j++)
+          chi_part[j] = chi_square_integral(j, simulation);
+    }
+
+    for(int j=0; j<Tmax; j++)
+       fprintf( f, "%.10g\n", psi_part[j]+chi_part[j] );
+
+    free(chi_part);
+    free(psi_part);
+    fclose(f);
+    free(str);
+}
