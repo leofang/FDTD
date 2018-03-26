@@ -984,30 +984,17 @@ void save_BIC(grid * simulation, const char * filename)
     double * psi_part = malloc(Tmax *sizeof(*psi_part));
     double * chi_part = malloc(Tmax *sizeof(*chi_part));
 
-    if(!psi_part)
+    if(!psi_part || !chi_part)
     {
-       fprintf(stderr, "rare event: malloc fails in %s, save the result serially...\n", __func__);
-       for(int j=0; j<Tmax; j++)
-          fprintf( f, "%.10g\n", psi_square_integral(j, simulation) );
-    }
-    else
-    {
-       #pragma omp parallel for
-       for(int j=0; j<Tmax; j++)
-          psi_part[j] = psi_square_integral(j, simulation);
+       fprintf(stderr, "FDTD: %s: malloc fails, skip this function...\n", __func__);
+       return;
     }
 
-    if(!chi_part)
+    #pragma omp parallel for
+    for(int j=0; j<Tmax; j++)
     {
-       fprintf(stderr, "rare event: malloc fails in %s, save the result serially...\n", __func__);
-       for(int j=0; j<Tmax; j++)
-          fprintf( f, "%.10g\n", chi_square_integral(j, simulation) );
-    }
-    else
-    {
-       #pragma omp parallel for
-       for(int j=0; j<Tmax; j++)
-          chi_part[j] = chi_square_integral(j, simulation);
+       psi_part[j] = psi_square_integral(j, simulation);
+       chi_part[j] = chi_square_integral(j, simulation);
     }
 
     for(int j=0; j<Tmax; j++)
