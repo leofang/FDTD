@@ -788,8 +788,10 @@ void save_chi_map(grid * simulation, const char * filename, double (*part)(doubl
     FILE * f = fopen(str, "w");
 
     //determine the map size
+    int j = simulation->Ny-1; //the time slice
+    //int j = (simulation->Ny-1 < simulation->Nx - simulation->nx/2 ? simulation->Ny-1 : simulation->Nx - simulation->nx/2); //the time slice
     int temp_1 = (int)ceil(simulation->Nx/2.0-simulation->nx/4.0);
-    int temp_2 = simulation->Ny-1-simulation->nx/2;
+    int temp_2 = j - simulation->nx/2;
     int L = (temp_1<temp_2 ? temp_1 : temp_2);
     for(int i=0; i<=L; i+=simulation->Tstep+1) //change L to largest integer multiple of Tstep+1 for nonzero Tstep
     {
@@ -798,34 +800,34 @@ void save_chi_map(grid * simulation, const char * filename, double (*part)(doubl
           L=i; break;
        }
     }
+    printf("FDTD: %s: the box is of dimension 2L*2L with L=%i.\n", __func__, L);
 
-    //compute chi(x1, x2, t) with t=(Ny-1)*Delta:
+    //compute chi(x1, x2, t) 
     //be careful: x1 & x2 here are array indices!!!
-    int j = simulation->Ny-1;
     for(int x2=simulation->origin_index-L; x2<=simulation->origin_index+L; x2+=(simulation->Tstep+1))
     {
         for(int x1=simulation->origin_index-L; x1<=simulation->origin_index+L; x1+=(simulation->Tstep+1))
         {
             double complex chi = 0;
-           double complex temp = 0;
-           double regularization_x1 = (x1==simulation->minus_a_index || x1==simulation->plus_a_index?0.5:1.0);
-           double regularization_x2 = (x2==simulation->minus_a_index || x2==simulation->plus_a_index?0.5:1.0);
+            double complex temp = 0;
+            double regularization_x1 = (x1==simulation->minus_a_index || x1==simulation->plus_a_index?0.5:1.0);
+            double regularization_x2 = (x2==simulation->minus_a_index || x2==simulation->plus_a_index?0.5:1.0);
 
             if(simulation->init_cond == 1 || simulation->init_cond == 3)
               chi += two_photon_input(x1-simulation->origin_index-j, x2-simulation->origin_index-j, simulation);
-          
-            if( x1>=simulation->minus_a_index )
+
+            if( x1>=simulation->minus_a_index && j>=x1-simulation->minus_a_index)
               temp += regularization_x1 * simulation->psi[j-x1+simulation->minus_a_index][x2-x1+simulation->minus_a_index];
 
-            if( x1>=simulation->plus_a_index )
+            if( x1>=simulation->plus_a_index && j>=x1-simulation->plus_a_index)
               temp -= regularization_x1 * simulation->psi[j-x1+simulation->plus_a_index][x2-x1+simulation->plus_a_index];
 
-            if( x2>=simulation->minus_a_index )
+            if( x2>=simulation->minus_a_index && j>=x2-simulation->minus_a_index)
               temp += regularization_x2 * simulation->psi[j-x2+simulation->minus_a_index][x1-x2+simulation->minus_a_index];
 
-            if( x2>=simulation->plus_a_index )
+            if( x2>=simulation->plus_a_index && j>=x2-simulation->plus_a_index)
               temp -= regularization_x2 * simulation->psi[j-x2+simulation->plus_a_index][x1-x2+simulation->plus_a_index];
-
+          
             chi -= sqrt(simulation->Gamma)/2.0 * temp;
             fprintf( f, "%.5g ", part(chi) );
         }
@@ -890,4 +892,72 @@ void save_psi_square_integral(grid * simulation, const char * filename)
     free(result);
     fclose(f);
     free(str);
+}
+
+
+//check the normalization factor in the two-excitation sector
+//\int dx |\psi(x,t)|^2 + \iint dx1 dx2 |\chi(x1, x2, t)|^2 = 1 should hold for all time t
+void check_normalization(grid * simulation)
+{
+    //determine the map size
+    int L = (int)ceil(simulation->Nx/2.0-simulation->nx/4.0);
+    int j = L-simulation->nx/2; //after this time the two photons will go outside of box
+    printf("FDTD: %s: the box is of dimension 2L*2L with L=%i.\n", __func__, L);
+    printf("FDTD: %s: perform the check at t=%i Delta...\n", __func__, j);
+
+    double abs_psi_square = psi_square_integral(j, simulation);
+    double abs_chi_square = 0;
+
+    //compute \iint_{-L}^{+L} dx1 dx2 |chi(x1, x2, t=j*Delta)|^2
+    //be careful: x1 & x2 here are array indices!!!
+    #pragma omp parallel for collapse(2), reduction(+:abs_chi_square)
+    for(int x2=simulation->origin_index-L; x2<=simulation->origin_index+L; x2++)
+    {
+        for(int x1=simulation->origin_index-L; x1<=simulation->origin_index+L; x1++)
+        {
+            double complex chi = 0;
+            double complex temp = 0;
+            double regularization_x1 = (x1==simulation->minus_a_index || x1==simulation->plus_a_index?0.5:1.0);
+            double regularization_x2 = (x2==simulation->minus_a_index || x2==simulation->plus_a_index?0.5:1.0);
+	    double trapezoidal_2D = 0;
+
+            if(simulation->init_cond == 1 || simulation->init_cond == 3)
+              chi += two_photon_input(x1-simulation->origin_index-j, x2-simulation->origin_index-j, simulation);
+          
+            if( x1>=simulation->minus_a_index && j>=x1-simulation->minus_a_index)
+              temp += regularization_x1 * simulation->psi[j-x1+simulation->minus_a_index][x2-x1+simulation->minus_a_index];
+
+            if( x1>=simulation->plus_a_index && j>=x1-simulation->plus_a_index)
+              temp -= regularization_x1 * simulation->psi[j-x1+simulation->plus_a_index][x2-x1+simulation->plus_a_index];
+
+            if( x2>=simulation->minus_a_index && j>=x2-simulation->minus_a_index)
+              temp += regularization_x2 * simulation->psi[j-x2+simulation->minus_a_index][x1-x2+simulation->minus_a_index];
+
+            if( x2>=simulation->plus_a_index && j>=x2-simulation->plus_a_index)
+              temp -= regularization_x2 * simulation->psi[j-x2+simulation->plus_a_index][x1-x2+simulation->plus_a_index];
+
+            chi -= sqrt(simulation->Gamma)/2.0 * temp;
+
+	    if( (x1==simulation->origin_index-L && x2==simulation->origin_index-L) 
+		|| (x1==simulation->origin_index-L && x2==simulation->origin_index+L)
+		|| (x1==simulation->origin_index+L && x2==simulation->origin_index-L)
+		|| (x1==simulation->origin_index+L && x2==simulation->origin_index+L) )
+	       trapezoidal_2D = 0.25;
+	    else if( (x1==simulation->origin_index-L && x2!=simulation->origin_index-L && x2!=simulation->origin_index+L)
+		|| (x1==simulation->origin_index+L && x2!=simulation->origin_index-L && x2!=simulation->origin_index+L)
+		|| (x2==simulation->origin_index-L && x1!=simulation->origin_index-L && x1!=simulation->origin_index+L)
+		|| (x2==simulation->origin_index+L && x1!=simulation->origin_index-L && x1!=simulation->origin_index+L) )
+	       trapezoidal_2D = 0.5;
+            else
+	       trapezoidal_2D = 1.0;
+
+	    abs_chi_square += trapezoidal_2D*cabs(chi)*cabs(chi);
+        }
+    }
+    abs_chi_square *= simulation->Delta * simulation->Delta;
+
+    printf("FDTD: %s: the 1-photon part is %.5f, and the 2-photon part is %.5f,\n", __func__, abs_psi_square, abs_chi_square);
+    printf("FDTD: %s: so the normalization factor (sum of them) is %.5f.\n", __func__, abs_psi_square+abs_chi_square);
+    if(fabs(1.0-abs_psi_square-abs_chi_square)>0.01) // <1% error is acceptable
+       fprintf(stderr, "FDTD: %s: *** WARNING: normalization factor deviates too much, the result may not be faithful ***\n", __func__);
 }

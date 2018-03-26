@@ -138,6 +138,7 @@ void prepare_qubit_wavefunction(grid * simulation);
 void initialize_e0(grid * simulation);
 void initialize_e1(grid * simulation);
 void calculate_normalization_const(grid * simulation);
+void check_normalization(grid * simulation);
 #ifdef __FDTD_OPENMP_SUPPORT__
 void initialize_OpenMP_team(grid * simulation);
 #endif

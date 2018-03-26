@@ -40,7 +40,7 @@ int main(int argc, char **argv)
      #ifdef __FDTD_PTHREAD_SUPPORT__
        printf("FDTD: the executable is compiled with both OpenMP (for loop parallelizations) and pthreads (for multi-solver).\n");
      #else
-       printf("FDTD: the executable is compiled with OpenMP (for loop paralleiizations and multi-solver).\n");
+       printf("FDTD: the executable is compiled with OpenMP (for loop parallelizations and multi-solver).\n");
      #endif
    #else
      #ifdef __FDTD_PTHREAD_SUPPORT__
@@ -251,6 +251,10 @@ int main(int argc, char **argv)
       save_chi_map(simulation, argv[1], cabs);
       end = getRealTime();
       printf("FDTD: chi map saved, getRealTime time elapsd: %f s\n", end - start);
+      start = getRealTime();
+      check_normalization(simulation);
+      end = getRealTime();
+      printf("FDTD: normalization factor checked, getRealTime time elapsd: %f s\n", end - start);
    }
    if(simulation->measure_NM)
    {

@@ -175,7 +175,7 @@ char * lookupValue(kvarray_t * pairs, const char * key) {
   
   if(!found_key)
   {
-      printf("%s: input parameter %s is not found.\n", __func__, key);
+      printf("FDTD: %s: input parameter %s is not found.\n", __func__, key);
       return NULL;
 //      exit(EXIT_FAILURE);
   }
