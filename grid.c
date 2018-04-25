@@ -981,27 +981,67 @@ void save_BIC(grid * simulation, const char * filename)
     }
 
     FILE * f = fopen(str, "w");
-    double * psi_part = malloc(Tmax *sizeof(*psi_part));
-    double * chi_part = malloc(Tmax *sizeof(*chi_part));
 
-    if(!psi_part || !chi_part)
+    //#pragma omp parallel for
+    //each function call is parallelized, so don't parallelize this loop
+    for(int j=0; j<Tmax; j++)
     {
-       fprintf(stderr, "FDTD: %s: malloc fails, skip this function...\n", __func__);
+       double psi_part=0, chi_part=0;
+       psi_part = psi_square_integral(j, simulation);
+       chi_part = chi_square_double_integral(j, simulation);
+       fprintf( f, "%.10g\n", psi_part+chi_part );
+    }
+
+    fclose(f);
+    free(str);
+}
+
+
+//calculate the photon intensity <a^\dagger(x)a(x)> with x in [-L, L]
+//EXPERIMENTAL!!!!
+void save_photon_intensity(grid * simulation, const char * filename)
+{
+    char * str = strdup(filename);
+    str = realloc(str, (strlen(filename)+17)*sizeof(char) );
+    strcat(str, ".intensity.out");
+
+    FILE * f = fopen(str, "w");
+    //double * chi_part = malloc((L+simulation->nx+1)*sizeof(*chi_part));
+    //if(!chi_part)
+    //{
+    //   fprintf(stderr, "FDTD: %s: malloc fails, skip this function...\n", __func__);
+    //   return;
+    //}
+    
+    //integration limit
+    int L = simulation->Nx - simulation->nx;
+    for(int i=0; i<=L; i+=simulation->Tstep+1) //change L to largest integer multiple of Tstep+1 for nonzero Tstep
+    {
+       if(i+simulation->Tstep+1>L)
+       {
+          L=i; break;
+       }
+    }
+    printf("FDTD: %s: the 1D box is of size 2L with L=%i.\n", __func__, L);
+
+    //take the last time slice at which \chi is meaningful; in line with save_BIC
+    int j = 0;
+    if(2*simulation->Nx >= 3*simulation->nx)
+       j = (simulation->Ny-1 < simulation->Nx - 3*simulation->nx/2 ? simulation->Ny-1 : simulation->Nx - 3*simulation->nx/2);
+    else
+    {
+       fprintf(stderr, "FDTD: %s: 2Nx>=3nx is not satisfied, skip this function.\n", __func__);
        return;
     }
 
-    #pragma omp parallel for
-    for(int j=0; j<Tmax; j++)
+    //chi_square_single_integral is parallelized, so don't parallelize this loop
+    for(int i=simulation->origin_index-L; i<simulation->origin_index+L; i+=(simulation->Tstep+1))
     {
-       psi_part[j] = psi_square_integral(j, simulation);
-       chi_part[j] = chi_square_integral(j, simulation);
+       double temp = cabs(simulation->psi[j][i]);
+       fprintf( f, "%.10g\n", temp*temp + chi_square_single_integral(j, i, simulation) );
     }
 
-    for(int j=0; j<Tmax; j++)
-       fprintf( f, "%.10g\n", psi_part[j]+chi_part[j] );
-
-    free(chi_part);
-    free(psi_part);
+    //free(chi_part);
     fclose(f);
     free(str);
 }

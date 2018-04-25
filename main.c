@@ -233,6 +233,12 @@ int main(int argc, char **argv)
       save_BIC(simulation, argv[1]);
       end = getRealTime();
       printf("FDTD: BIC saved, getRealTime time elapsd: %f s\n", end - start);
+
+      //TODO: add a seperate flag for save_photon_intensity
+      start = getRealTime();
+      save_photon_intensity(simulation, argv[1]);
+      end = getRealTime();
+      printf("FDTD: intensity saved, getRealTime time elapsd: %f s\n", end - start);
    }
    if(simulation->save_psi_binary)
    {
@@ -257,6 +263,8 @@ int main(int argc, char **argv)
       save_chi_map(simulation, argv[1], cabs);
       end = getRealTime();
       printf("FDTD: chi map saved, getRealTime time elapsd: %f s\n", end - start);
+
+      //TODO: perform this check always
       start = getRealTime();
       check_normalization(simulation);
       end = getRealTime();
