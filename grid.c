@@ -762,7 +762,7 @@ void save_chi(grid * simulation, const char * filename, double (*part)(double co
 
 //this function computes the two-photon wavefunction as a 2D map,
 //
-//     \chi (x1, x2, t=Ny-1),  //the last snapshot
+//     \chi (x1, x2, T),  //T is taken such that the wavefronts are aligned at the boundary
 //
 //the calculation of which is done on the fly and then writes to a file, 
 //so no extra memory is allocated; the third argument "part" can be any
@@ -788,11 +788,13 @@ void save_chi_map(grid * simulation, const char * filename, double (*part)(doubl
     FILE * f = fopen(str, "w");
 
     //determine the map size
-    int j = simulation->Ny-1; //the time slice
-    //int j = (simulation->Ny-1 < simulation->Nx - simulation->nx/2 ? simulation->Ny-1 : simulation->Nx - simulation->nx/2); //the time slice
-    int temp_1 = (int)ceil(simulation->Nx/2.0-simulation->nx/4.0);
-    int temp_2 = j - simulation->nx/2;
-    int L = (temp_1<temp_2 ? temp_1 : temp_2);
+    //int j = simulation->Ny-1; //the time slice
+    ////int j = (simulation->Ny-1 < simulation->Nx - simulation->nx/2 ? simulation->Ny-1 : simulation->Nx - simulation->nx/2); //the time slice
+    //int temp_1 = (int)ceil(simulation->Nx/2.0-simulation->nx/4.0);
+    //int temp_2 = j - simulation->nx/2;
+    //int L = (temp_1<temp_2 ? temp_1 : temp_2);
+    int j = (int)ceil(simulation->Nx/2.0-3*simulation->nx/4.0);
+    int L = (int)ceil(simulation->Nx/2.0-simulation->nx/4.0);
     for(int i=0; i<=L; i+=simulation->Tstep+1) //change L to largest integer multiple of Tstep+1 for nonzero Tstep
     {
        if(i+simulation->Tstep+1>L)
@@ -984,7 +986,7 @@ void save_BIC(grid * simulation, const char * filename)
 
     //#pragma omp parallel for
     //each function call is parallelized, so don't parallelize this loop
-    for(int j=0; j<Tmax; j++)
+    for(int j=0; j<Tmax; j+=simulation->Tstep+1)
     {
        double psi_part=0, chi_part=0;
        psi_part = psi_square_integral(j, simulation);
