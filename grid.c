@@ -810,28 +810,7 @@ void save_chi_map(grid * simulation, const char * filename, double (*part)(doubl
     {
         for(int x1=simulation->origin_index-L; x1<=simulation->origin_index+L; x1+=(simulation->Tstep+1))
         {
-            double complex chi = 0;
-            double complex temp = 0;
-            double regularization_x1 = (x1==simulation->minus_a_index || x1==simulation->plus_a_index?0.5:1.0);
-            double regularization_x2 = (x2==simulation->minus_a_index || x2==simulation->plus_a_index?0.5:1.0);
-
-            if(simulation->init_cond == 1 || simulation->init_cond == 3)
-              chi += two_photon_input(x1-simulation->origin_index-j, x2-simulation->origin_index-j, simulation);
-
-            if( x1>=simulation->minus_a_index && j>=x1-simulation->minus_a_index)
-              temp += regularization_x1 * simulation->psi[j-x1+simulation->minus_a_index][x2-x1+simulation->minus_a_index];
-
-            if( x1>=simulation->plus_a_index && j>=x1-simulation->plus_a_index)
-              temp -= regularization_x1 * simulation->psi[j-x1+simulation->plus_a_index][x2-x1+simulation->plus_a_index];
-
-            if( x2>=simulation->minus_a_index && j>=x2-simulation->minus_a_index)
-              temp += regularization_x2 * simulation->psi[j-x2+simulation->minus_a_index][x1-x2+simulation->minus_a_index];
-
-            if( x2>=simulation->plus_a_index && j>=x2-simulation->plus_a_index)
-              temp -= regularization_x2 * simulation->psi[j-x2+simulation->plus_a_index][x1-x2+simulation->plus_a_index];
-          
-            chi -= sqrt(simulation->Gamma)/2.0 * temp;
-            fprintf( f, "%.5g ", part(chi) );
+            fprintf( f, "%.5g ", part(chi(j, x1, x2, simulation)) );
         }
         fprintf( f, "\n");
     }
@@ -917,28 +896,8 @@ void check_normalization(grid * simulation)
     {
         for(int x1=simulation->origin_index-L; x1<=simulation->origin_index+L; x1++)
         {
-            double complex chi = 0;
-            double complex temp = 0;
-            double regularization_x1 = (x1==simulation->minus_a_index || x1==simulation->plus_a_index?0.5:1.0);
-            double regularization_x2 = (x2==simulation->minus_a_index || x2==simulation->plus_a_index?0.5:1.0);
+            double complex abs_chi = cabs(chi(j, x1, x2, simulation));
 	    double trapezoidal_2D = 0;
-
-            if(simulation->init_cond == 1 || simulation->init_cond == 3)
-              chi += two_photon_input(x1-simulation->origin_index-j, x2-simulation->origin_index-j, simulation);
-          
-            if( x1>=simulation->minus_a_index && j>=x1-simulation->minus_a_index)
-              temp += regularization_x1 * simulation->psi[j-x1+simulation->minus_a_index][x2-x1+simulation->minus_a_index];
-
-            if( x1>=simulation->plus_a_index && j>=x1-simulation->plus_a_index)
-              temp -= regularization_x1 * simulation->psi[j-x1+simulation->plus_a_index][x2-x1+simulation->plus_a_index];
-
-            if( x2>=simulation->minus_a_index && j>=x2-simulation->minus_a_index)
-              temp += regularization_x2 * simulation->psi[j-x2+simulation->minus_a_index][x1-x2+simulation->minus_a_index];
-
-            if( x2>=simulation->plus_a_index && j>=x2-simulation->plus_a_index)
-              temp -= regularization_x2 * simulation->psi[j-x2+simulation->plus_a_index][x1-x2+simulation->plus_a_index];
-
-            chi -= sqrt(simulation->Gamma)/2.0 * temp;
 
 	    if( (x1==simulation->origin_index-L && x2==simulation->origin_index-L) 
 		|| (x1==simulation->origin_index-L && x2==simulation->origin_index+L)
@@ -953,7 +912,7 @@ void check_normalization(grid * simulation)
             else
 	       trapezoidal_2D = 1.0;
 
-	    abs_chi_square += trapezoidal_2D*cabs(chi)*cabs(chi);
+	    abs_chi_square += trapezoidal_2D*cabs(abs_chi)*cabs(abs_chi);
         }
     }
     abs_chi_square *= simulation->Delta * simulation->Delta;
@@ -1000,14 +959,17 @@ void save_BIC(grid * simulation, const char * filename)
 
 
 //calculate the photon intensity <a^\dagger(x)a(x)> with x in [-L, L]
-//EXPERIMENTAL!!!!
 void save_photon_intensity(grid * simulation, const char * filename)
 {
-    char * str = strdup(filename);
-    str = realloc(str, (strlen(filename)+17)*sizeof(char) );
-    strcat(str, ".intensity.out");
+    char * str1 = strdup(filename);
+    char * str2 = strdup(filename);
+    str1 = realloc(str1, (strlen(filename)+22)*sizeof(char) );
+    str2 = realloc(str2, (strlen(filename)+23)*sizeof(char) );
+    strcat(str1, ".intensity_diag.out");
+    strcat(str2, ".intensity_cross.out");
 
-    FILE * f = fopen(str, "w");
+    FILE * f1 = fopen(str1, "w");
+    FILE * f2 = fopen(str2, "w");
     //double * chi_part = malloc((L+simulation->nx+1)*sizeof(*chi_part));
     //if(!chi_part)
     //{
@@ -1016,7 +978,8 @@ void save_photon_intensity(grid * simulation, const char * filename)
     //}
     
     //integration limit
-    int L = simulation->Nx - simulation->nx;
+    //int L = simulation->Nx - simulation->nx;
+    int L = (int)ceil(simulation->Nx/2.0-simulation->nx/4.0);
     for(int i=0; i<=L; i+=simulation->Tstep+1) //change L to largest integer multiple of Tstep+1 for nonzero Tstep
     {
        if(i+simulation->Tstep+1>L)
@@ -1026,24 +989,30 @@ void save_photon_intensity(grid * simulation, const char * filename)
     }
     printf("FDTD: %s: the 1D box is of size 2L with L=%i.\n", __func__, L);
 
-    //take the last time slice at which \chi is meaningful; in line with save_BIC
-    int j = 0;
-    if(2*simulation->Nx >= 3*simulation->nx)
-       j = (simulation->Ny-1 < simulation->Nx - 3*simulation->nx/2 ? simulation->Ny-1 : simulation->Nx - 3*simulation->nx/2);
-    else
-    {
-       fprintf(stderr, "FDTD: %s: 2Nx>=3nx is not satisfied, skip this function.\n", __func__);
-       return;
-    }
+    //take the last time slice at which \chi is meaningful; in line with save_chi_map
+    int j = (int)ceil(simulation->Nx/2.0-3*simulation->nx/4.0);
+    //int j = 0;
+    //if(2*simulation->Nx >= 3*simulation->nx)
+    //   j = (simulation->Ny-1 < simulation->Nx - 3*simulation->nx/2 ? simulation->Ny-1 : simulation->Nx - 3*simulation->nx/2);
+    //else
+    //{
+    //   fprintf(stderr, "FDTD: %s: 2Nx>=3nx is not satisfied, skip this function.\n", __func__);
+    //   return;
+    //}
 
     //chi_square_single_integral is parallelized, so don't parallelize this loop
     for(int i=simulation->origin_index-L; i<simulation->origin_index+L; i+=(simulation->Tstep+1))
     {
-       double temp = cabs(simulation->psi[j][i]);
-       fprintf( f, "%.10g\n", temp*temp + chi_square_single_integral(j, i, simulation) );
+       double complex psi = simulation->psi[j][i];
+       fprintf(f1, "%.10g\n", cabs(psi)*cabs(psi) + chi_square_single_integral(j, i, simulation));
+       double complex psi_m = simulation->psi[j][2*simulation->origin_index-i];
+       double complex temp = conj(psi)*psi_m + chi_square_single_integral_mirrored(j, i, simulation);
+       fprintf(f2, "%.10g + %.10g *I\n", creal(temp), cimag(temp));
     }
 
     //free(chi_part);
-    fclose(f);
-    free(str);
+    fclose(f1);
+    fclose(f2);
+    free(str1);
+    free(str2);
 }

@@ -99,6 +99,35 @@ inline double complex two_photon_input(double x1, double x2, grid * simulation)
 }
 
 
+inline double complex chi(int j, int x1, int x2, grid * simulation)
+{
+   double complex chi = 0;
+   double complex temp = 0;
+   double regularization_x1 = (x1==simulation->minus_a_index || x1==simulation->plus_a_index?0.5:1.0);
+   double regularization_x2 = (x2==simulation->minus_a_index || x2==simulation->plus_a_index?0.5:1.0);
+
+   //initial condition chi(x1, x2, 0)
+   if(simulation->init_cond == 1 || simulation->init_cond == 3)
+     chi += two_photon_input(x1-simulation->origin_index-j, x2-simulation->origin_index-j, simulation);
+   
+   if( x1>=simulation->minus_a_index && j>=x1-simulation->minus_a_index)
+     temp += regularization_x1 * simulation->psi[j-x1+simulation->minus_a_index][x2-x1+simulation->minus_a_index];
+
+   if( x1>=simulation->plus_a_index && j>=x1-simulation->plus_a_index)
+     temp -= regularization_x1 * simulation->psi[j-x1+simulation->plus_a_index][x2-x1+simulation->plus_a_index];
+
+   if( x2>=simulation->minus_a_index && j>=x2-simulation->minus_a_index)
+     temp += regularization_x2 * simulation->psi[j-x2+simulation->minus_a_index][x1-x2+simulation->minus_a_index];
+
+   if( x2>=simulation->plus_a_index && j>=x2-simulation->plus_a_index)
+     temp -= regularization_x2 * simulation->psi[j-x2+simulation->plus_a_index][x1-x2+simulation->plus_a_index];
+
+   chi -= sqrt(simulation->Gamma)/2.0 * temp;
+
+   return chi;
+}
+
+
 //this function calculates \int dx |\psi(x,t)|^2
 inline double psi_square_integral(int j, grid * simulation)
 {
@@ -173,43 +202,23 @@ inline double chi_square_double_integral(int j, grid * simulation)
     {
         for(int x1=simulation->minus_a_index; x1<=simulation->plus_a_index; x1++)
         {
-            double complex chi = 0;
-            double complex temp = 0;
-            double regularization_x1 = (x1==simulation->minus_a_index || x1==simulation->plus_a_index?0.5:1.0);
-            double regularization_x2 = (x2==simulation->minus_a_index || x2==simulation->plus_a_index?0.5:1.0);
+            double abs_chi = cabs(chi(j, x1, x2, simulation));
 	    double trapezoidal_2D = 0;
 
-            if(simulation->init_cond == 1 || simulation->init_cond == 3)
-              chi += two_photon_input(x1-simulation->origin_index-j, x2-simulation->origin_index-j, simulation);
-          
-            if( x1>=simulation->minus_a_index && j>=x1-simulation->minus_a_index)
-              temp += regularization_x1 * simulation->psi[j-x1+simulation->minus_a_index][x2-x1+simulation->minus_a_index];
-
-            if( x1>=simulation->plus_a_index && j>=x1-simulation->plus_a_index)
-              temp -= regularization_x1 * simulation->psi[j-x1+simulation->plus_a_index][x2-x1+simulation->plus_a_index];
-
-            if( x2>=simulation->minus_a_index && j>=x2-simulation->minus_a_index)
-              temp += regularization_x2 * simulation->psi[j-x2+simulation->minus_a_index][x1-x2+simulation->minus_a_index];
-
-            if( x2>=simulation->plus_a_index && j>=x2-simulation->plus_a_index)
-              temp -= regularization_x2 * simulation->psi[j-x2+simulation->plus_a_index][x1-x2+simulation->plus_a_index];
-
-            chi -= sqrt(simulation->Gamma)/2.0 * temp;
-
-	    if( (x1==simulation->origin_index-L && x2==simulation->origin_index-L) 
-		|| (x1==simulation->origin_index-L && x2==simulation->origin_index+L)
-		|| (x1==simulation->origin_index+L && x2==simulation->origin_index-L)
-		|| (x1==simulation->origin_index+L && x2==simulation->origin_index+L) )
+	    if(    (x1==simulation->minus_a_index && x2==simulation->plus_a_index) 
+		|| (x1==simulation->minus_a_index && x2==simulation->origin_index+L)
+		|| (x1==simulation->plus_a_index && x2==simulation->plus_a_index)
+		|| (x1==simulation->plus_a_index && x2==simulation->origin_index+L) )
 	       trapezoidal_2D = 0.25;
-	    else if( (x1==simulation->origin_index-L && x2!=simulation->origin_index-L && x2!=simulation->origin_index+L)
-		|| (x1==simulation->origin_index+L && x2!=simulation->origin_index-L && x2!=simulation->origin_index+L)
-		|| (x2==simulation->origin_index-L && x1!=simulation->origin_index-L && x1!=simulation->origin_index+L)
-		|| (x2==simulation->origin_index+L && x1!=simulation->origin_index-L && x1!=simulation->origin_index+L) )
+	    else if( (x1==simulation->minus_a_index && x2!=simulation->plus_a_index && x2!=simulation->origin_index+L)
+   		|| (x1==simulation->plus_a_index && x2!=simulation->plus_a_index && x2!=simulation->origin_index+L)
+   		|| (x2==simulation->plus_a_index && x1!=simulation->minus_a_index && x1!=simulation->plus_a_index)
+   		|| (x2==simulation->origin_index+L && x1!=simulation->minus_a_index && x1!=simulation->plus_a_index) )
 	       trapezoidal_2D = 0.5;
             else
 	       trapezoidal_2D = 1.0;
 
-	    abs_chi_square += trapezoidal_2D*cabs(chi)*cabs(chi);
+	    abs_chi_square += trapezoidal_2D*abs_chi*abs_chi;
         }
     }
     abs_chi_square *= 2.0 * simulation->Delta * simulation->Delta;
@@ -218,54 +227,64 @@ inline double chi_square_double_integral(int j, grid * simulation)
 }
 
 
-//this function calculates 2*\int_{-a}^{+L}dx2 |\chi(x1, x2, t)|^2
-//the window L here is NOT the same as that in check_normalization and save_chi_map
-//EXPERIMENTAL!!!!
+//this function calculates 2*\int_{-L}^{+L}dx2 |\chi(x1, x2, t)|^2
+//the window L here is same as that in check_normalization and save_chi_map
 inline double chi_square_single_integral(int j, int x1, grid * simulation)
 {
     //determine the map size
-    int L = simulation->Nx-simulation->nx;
+    //int L = simulation->Nx-simulation->nx;
+    int L = (int)ceil(simulation->Nx/2.0-simulation->nx/4.0);
 
     double abs_chi_square = 0;
 
     //compute the desired integral at t=j*Delta
     //be careful: x1 & x2 here are array indices!!!
     #pragma omp parallel for reduction(+:abs_chi_square)
-    for(int x2=simulation->minus_a_index; x2<=simulation->origin_index+L; x2++)
+    for(int x2=simulation->origin_index-L; x2<=simulation->origin_index+L; x2++)
     {
-        double complex chi = 0;
-        double complex temp = 0;
-        double regularization_x1 = (x1==simulation->minus_a_index || x1==simulation->plus_a_index?0.5:1.0);
-        double regularization_x2 = (x2==simulation->minus_a_index || x2==simulation->plus_a_index?0.5:1.0);
 	double trapezoidal_1D = 0;
+	if(x2==simulation->origin_index-L || x2==simulation->origin_index+L)
+	   trapezoidal_1D = 0.5;
+	else
+	   trapezoidal_1D = 1.0;
+  
+        double abs_chi = cabs(chi(j, x1, x2, simulation));
 
-        if(simulation->init_cond == 1 || simulation->init_cond == 3)
-          chi += two_photon_input(x1-simulation->origin_index-j, x2-simulation->origin_index-j, simulation);
-        
-        if( x1>=simulation->minus_a_index && j>=x1-simulation->minus_a_index)
-          temp += regularization_x1 * simulation->psi[j-x1+simulation->minus_a_index][x2-x1+simulation->minus_a_index];
+	abs_chi_square += trapezoidal_1D*abs_chi*abs_chi;
+    }
+    abs_chi_square *= 2.0 * simulation->Delta;
 
-        if( x1>=simulation->plus_a_index && j>=x1-simulation->plus_a_index)
-          temp -= regularization_x1 * simulation->psi[j-x1+simulation->plus_a_index][x2-x1+simulation->plus_a_index];
+    return abs_chi_square;
+}
 
-        if( x2>=simulation->minus_a_index && j>=x2-simulation->minus_a_index)
-          temp += regularization_x2 * simulation->psi[j-x2+simulation->minus_a_index][x1-x2+simulation->minus_a_index];
 
-        if( x2>=simulation->plus_a_index && j>=x2-simulation->plus_a_index)
-          temp -= regularization_x2 * simulation->psi[j-x2+simulation->plus_a_index][x1-x2+simulation->plus_a_index];
+//this function calculates 2*\int_{-L}^{+L}dx2 \chi^*(x1, x2, t)\chi(-x1, x2, t)
+//the window L here is same as that in check_normalization and save_chi_map
+inline double complex chi_square_single_integral_mirrored(int j, int x1, grid * simulation)
+{
+    //determine the map size
+    //int L = simulation->Nx-simulation->nx;
+    int L = (int)ceil(simulation->Nx/2.0-simulation->nx/4.0);
+    int x1_m = 2*simulation->origin_index - x1; //mirrored position
 
-        chi -= sqrt(simulation->Gamma)/2.0 * temp;
+    double complex chi_product = 0;
 
-	if(x2==simulation->minus_a_index || x2==simulation->origin_index+L)
+    //compute the desired integral at t=j*Delta
+    //be careful: x1 & x2 here are array indices!!!
+    #pragma omp parallel for reduction(+:chi_product)
+    for(int x2=simulation->origin_index-L; x2<=simulation->origin_index+L; x2++)
+    {
+        double trapezoidal_1D = 0;
+	if(x2==simulation->origin_index-L || x2==simulation->origin_index+L)
 	   trapezoidal_1D = 0.5;
 	else
 	   trapezoidal_1D = 1.0;
 
-	abs_chi_square += trapezoidal_1D*cabs(chi)*cabs(chi);
+	chi_product += trapezoidal_1D*conj(chi(j, x1, x2, simulation))*chi(j, x1_m, x2, simulation);
     }
-    abs_chi_square *= 2.0 * simulation->Delta * simulation->Delta;
+    chi_product *= 2.0 * simulation->Delta;
 
-    return abs_chi_square;
+    return chi_product;
 }
 
 
