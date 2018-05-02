@@ -203,20 +203,12 @@ inline double chi_square_double_integral(int j, grid * simulation)
         for(int x1=simulation->minus_a_index; x1<=simulation->plus_a_index; x1++)
         {
             double abs_chi = cabs(chi(j, x1, x2, simulation));
-	    double trapezoidal_2D = 0;
+            double trapezoidal_2D = 1.0;
 
-	    if(    (x1==simulation->minus_a_index && x2==simulation->plus_a_index) 
-		|| (x1==simulation->minus_a_index && x2==simulation->origin_index+L)
-		|| (x1==simulation->plus_a_index && x2==simulation->plus_a_index)
-		|| (x1==simulation->plus_a_index && x2==simulation->origin_index+L) )
-	       trapezoidal_2D = 0.25;
-	    else if( (x1==simulation->minus_a_index && x2!=simulation->plus_a_index && x2!=simulation->origin_index+L)
-   		|| (x1==simulation->plus_a_index && x2!=simulation->plus_a_index && x2!=simulation->origin_index+L)
-   		|| (x2==simulation->plus_a_index && x1!=simulation->minus_a_index && x1!=simulation->plus_a_index)
-   		|| (x2==simulation->origin_index+L && x1!=simulation->minus_a_index && x1!=simulation->plus_a_index) )
-	       trapezoidal_2D = 0.5;
-            else
-	       trapezoidal_2D = 1.0;
+	    if(x1==simulation->minus_a_index || x1==simulation->plus_a_index) 
+	       trapezoidal_2D *= 0.5;
+	    if(x2==simulation->origin_index+L || x2==simulation->plus_a_index) 
+	       trapezoidal_2D *= 0.5;
 
 	    abs_chi_square += trapezoidal_2D*abs_chi*abs_chi;
         }
