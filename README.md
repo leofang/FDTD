@@ -1,4 +1,4 @@
-# FDTD: solving 1+1D delay PDE
+# FDTD: solving 1+1D delay PDE in parallel
 This code is intended to solve 1+1D complex-valued, delay PDE which emerges in waveguide-QED problems: ![](doc/delay_PDE.png)
 Due to the nature of the delay PDE, the FDTD solver marches in a space-then-time way: ![](doc/FDTD_marching.gif)
 
@@ -75,6 +75,6 @@ For the OpenMP implementation, we parallelize the calculation on a given wavefro
 ![](doc/FDTD_marching_pthread.gif)
 
 ## License
-This code is released under the MIT license. For the academic uses, *citations to **[Fang et al., New J. Phys. 20, 043035 (2018)](https://doi.org/10.1088/1367-2630/aaba5d)** and **[Fang, Comput. Phys. Commun. (2018)](https://doi.org/10.1016/j.cpc.2018.08.018)** are strongly encouraged and acknowledged.* 
+This code is released under the MIT license. For the academic uses, *citations to **[Fang, Comput. Phys. Commun. (2018)](https://doi.org/10.1016/j.cpc.2018.08.018)** and **[Fang et al., New J. Phys. 20, 043035 (2018)](https://doi.org/10.1088/1367-2630/aaba5d)** are strongly encouraged and acknowledged.* 
 
 Copyright (C) 2018 Leo Fang.
