@@ -6,17 +6,19 @@
 # published by Sam Hocevar. See the accompanying LICENSE file or
 # http://www.wtfpl.net/ for more details.
 
-CFLAGS=-Wall -std=gnu99 -pedantic -O3 #-ggdb3 -Werror
+CC=gcc
+override CFLAGS+=-fopenmp -Wall -std=gnu99 -pedantic -O3 -pthread #-ggdb3 -Werror
+#override CFLAGS+=-Wa,-q
 SRCS=$(wildcard *.c)
 OBJS=$(patsubst %.c, %.o, $(SRCS))
 PROGRAM=FDTD
-LDFLAGS=-lm
+LDFLAGS=-lm -pthread -fopenmp
 
 $(PROGRAM): $(OBJS)
-	gcc $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
+	$(CC) $(CFLAGS) $(OpenMP) -o $@ $(OBJS) $(LDFLAGS)
 
 %.o: %.c 
-	gcc -c $(CFLAGS) $<
+	$(CC) -c $(CFLAGS) $(OpenMP) $<
 
 clean:
 	rm -f $(OBJS) $(PROGRAM) *~
@@ -27,9 +29,10 @@ depend:
 
 # DO NOT DELETE
 
+NM_measure.o: NM_measure.h grid.h kv.h special_function.h dynamics.h
 dynamics.o: dynamics.h grid.h kv.h
 grid.o: kv.h grid.h special_function.h dynamics.h NM_measure.h
 kv.o: kv.h
-main.o: grid.h kv.h dynamics.h NM_measure.h
-NM_measure.o: NM_measure.h grid.h kv.h special_function.h dynamics.h
+main.o: grid.h kv.h dynamics.h NM_measure.h pthread_solver.h
+pthread_solver.o: pthread_solver.h dynamics.h grid.h kv.h
 special_function.o: special_function.h

@@ -25,7 +25,7 @@
 \usepackage[titletoc,toc,title]{appendix}
 
 % produce bibliography; not needed in RevTeX documentclass!
-\usepackage[numbers, compress]{natbib}
+\usepackage[numbers, sort&compress]{natbib}
 
 % generate graphs and plots directly with (La)TeX
 %\usepackage{tikz}
@@ -115,24 +115,36 @@
 \DeclareMathOperator{\im}{Im}
 \DeclareMathOperator{\res}{Res}
 
+\usepackage{filecontents}
+\begin{filecontents}{\jobname.bib}
+	@misc{OurBIC,
+		note={Ciccarello F, Calaj\`{o} G, Fang Y-L L, and Baranger H U, in preparation.}
+	}
+    @misc{GiantAtom,
+        note={Fang Y-L L, unpublished.}
+    }
+\end{filecontents}
+
+
 
 \begin{document}
-\title{FDTD: solving 1+1D delay PDE}
+\title{FDTD: solving 1+1D delay PDE in parallel}
 %\author[1]{Yao-Lung L. Fang 
-\author{Yao-Lung L. Fang 
-	\thanks{Email address: \texttt{leofang@mailaps.org}}}
+\author[1,2]{Yao-Lung L. Fang}
+	%\thanks{Email address: \texttt{leofang@mailaps.org}}}
 %\author[2,1]{Francesco Ciccarello}
 %\author[1]{Harold U. Baranger}
-\affil{\footnotesize{Department of Physics, Duke University, P.O. Box 90305, Durham, North Carolina 27708-0305, USA}}
+\affil[1]{\footnotesize{Department of Physics, Duke University, P.O. Box 90305, Durham, North Carolina 27708-0305, USA}}
+\affil[2]{\footnotesize{Computational Science Initiative, Brookhaven National Laboratory, Upton, NY 11973-5000, USA}\footnote{Present address.}}
 %\affil[1]{\footnotesize{Department of Physics, Duke University, P.O. Box 90305, Durham, North Carolina 27708-0305, USA}}
 %\affil[2]{\footnotesize{NEST, Istituto Nanoscienze-CNR and Dipartimento di Fisica e Chimica, Universita' degli Studi di Palermo, Italy}}
 \date{\footnotesize Dated: \today}
 \maketitle
 
 \begin{abstract}
-	We present a proof of concept for adapting the finite-difference time-domain method (FDTD) for solving a 1+1D complex-valued, delay partial differential equation (PDE) that emerges in the study of waveguide quantum electrodynamics (QED). The delay term exists in both spatial and temporal directions, rendering the conventional approaches such as the method of lines inapplicable. 
+	We present a proof of concept for solving a 1+1D complex-valued, delay partial differential equation (PDE) that emerges in the study of waveguide quantum electrodynamics (QED) by adapting the finite-difference time-domain method (FDTD). The delay term is spatially non-local, rendering the conventional approaches such as the method of lines inapplicable. 
 	%As a result, the entire solution of the delay PDE must be stored in the memory for easy lookup. 
-	We show that by properly designing the grid and by using the exact (partial) solution as the boundary condition, the delay PDE can be numerically solved. Our code provides a numerically exact solution to the time-dependent multi-photon scattering problem in waveguide QED. The program is written in C and open-sourced on GitHub.% under the WTFPL license.
+	We show that by properly designing the grid and by using the (partial) exact solution as the boundary condition, the delay PDE can be numerically solved. In addition, we demonstrate that even with strong data dependency, such a problem can still be solved parallelly. Our code provides a numerically exact solution to the time-dependent multi-photon scattering problem in waveguide QED. The program is written in C and open-sourced on GitHub.% under the WTFPL license.
 	%and conforms to the C99 standard, and several utility scripts are provided for the ease of post-processing .
 \end{abstract}
 
@@ -143,22 +155,39 @@
 
 \section{Overview}
 \subsection{Introduction}
-Waveguide quantum electrodynamics (QED) concerns the interaction between one-dimensional (1D) waveguide photons and local emitters (atoms, qubits, etc.) \cite{LodahlRMP15,RoyRMP17,NohRPP16,LiaoPhyScr16}. In the cases where a coherent feedback loop is formed due to the presence of, for example, multiple distant emitters or a perfect mirror terminating the waveguide, the propagation of photons needs to be taken into account rigorously if the time of flight is non-negligible compared to the decay time \cite{ZhengPRL13,TufarelliPRA14,FangPRA15,GrimsmoPRL15,RamosPRA16}.
+Waveguide quantum electrodynamics (QED) concerns the interaction between one-dimensional (1D) waveguide photons and local emitters (atoms, qubits, etc.) \cite{LodahlRMP15,RoyRMP17,NohRPP16,LiaoPhyScr16}. In the cases where a coherent feedback loop is formed due to the presence of, for example, multiple distant emitters or a perfect mirror terminating the waveguide, the propagation of photons needs to be taken into account rigorously if the time of flight is non-negligible compared to the decay time \cite{ZhengPRL13,TufarelliPRA14,FangPRA15,GrimsmoPRL15,RamosPRA16,PichlerPRL16}.
 
-As a concrete example, we consider a two-level system (2LS) coupled to a semi-infinite waveguide \cite{FangPRA15, FangNM17}. Denoting the atom-mirror separation as $a$, we arrive at a 1+1D delay partial differential equation (PDE) that describes the (complex-valued) time-dependent wavefunction, $\psi(x,t)$, in the two-excitation sector for the 2LS plus a photon at position $x$:
+As a concrete example, we consider a two-level system (2LS) coupled to a semi-infinite waveguide, one end of which is terminated by a perfect mirror \cite{FangPRA15, FangNM17}. Denoting the atom-mirror separation as $a$, in the two-excitation sector we arrive at a 1+1D delay partial differential equation (PDE) that describes the (complex-valued) time-dependent wavefunction, $\psi(x,t)$, for the 2LS plus a photon at position $x$:
 %\begin{widetext}
-\begin{align}
-\frac{\partial}{\partial t}\psi(x,t)&=-\frac{\partial}{\partial x}\psi(x,t)-\left(i\omega_0+\frac{\Gamma}{2}\right)\psi(x,t)+\frac{\Gamma}{2}\psi(x-2a, t-2a)\theta(t-2a)  \label{eq:double-excitation delay differential eq}\\
-&\quad- \frac{\Gamma}{2}\Biggl\{\Bigl[\psi(- x- 2a, t- x- a) - \psi(- x, t- x- a)\Bigr]\theta(x+a)\theta(t- x- a)\nonumber\\
-&\quad\quad\quad +\Bigl[\psi(2a- x, t- x+ a)- \psi(- x, t- x+a)\Bigr]\theta(x- a)\theta(t- x+ a)\Biggr\} \nonumber\\
-&\quad+\sqrt{\frac{\Gamma}{4}}\biggl[\chi(x-t,-a-t,0)+\chi(-a-t,x-t,0)-\chi(x-t,a-t,0)-\chi(a-t,x-t,0)\biggr]\nonumber,
-\end{align}
+\begin{equation}
+\begin{aligned}
+\frac{\partial}{\partial t}\psi(x,t)&=-\frac{\partial}{\partial x}\psi(x,t)-\left(i\omega_0+\frac{\Gamma}{2}\right)\psi(x,t)+\frac{\Gamma}{2}\psi(x-2a, t-2a)\theta(t-2a)  \\
+&\quad- \frac{\Gamma}{2}\Biggl\{\Bigl[\psi(- x- 2a, t- x- a) - \psi(- x, t- x- a)\Bigr]\theta(x+a)\theta(t- x- a)\\
+&\quad\quad\quad +\Bigl[\psi(2a- x, t- x+ a)- \psi(- x, t- x+a)\Bigr]\theta(x- a)\theta(t- x+ a)\Biggr\} \\
+&\quad+\sqrt{\Gamma}\biggl[\chi(x-t,-a-t,0)-\chi(x-t,a-t,0)\biggr],
+\end{aligned}\label{eq:double-excitation delay differential eq}
+\end{equation}
 %\end{widetext}
-where $\omega_0$ ($\Gamma$) is the 2LS frequency (decay rate), $\theta(x)$ is the step function, and $\chi(x_1, x_2,t )$ is the two-photon wavefunction (one at position $x_1$, another at $x_2$). The detailed discussion of this problem is reported elsewhere \cite{FangNM17}.
+where $\omega_0$ ($\Gamma$) is the 2LS frequency (decay rate), $\theta(x)$ is the step function, and $\chi(x_1, x_2,t )$ is the two-photon wavefunction (one at position $x_1$, another at $x_2$). By solving Eq.~\eqref{eq:double-excitation delay differential eq}, the full dynamics of the system can be completely determined. For example, the time-dependent two-photon wavefunction is given by  
+\begin{equation}
+\begin{aligned}
+\chi(x_1, x_2, t)& = \chi(x_1-t, x_2-t, 0)-\frac{\sqrt{\Gamma}}{2}\biggl[
+\psi(x_1-x_2-a, t-x_2-a)\theta(x_2+a)\theta(t-x_2-a)\\
+&\quad
+-\psi(x_1-x_2+a, t-x_2+a)\theta(x_2-a)\theta(t-x_2+a) +\bigl(x_2 \leftrightarrow x_1\bigr)
+%&\quad
+%+\psi(x_2-x_1-a, t-x_1-a)\theta(x_1+a)\theta(t-x_1-a)\nonumber\\
+%&\quad
+%-\psi(x_2-x_1+a, t-x_1+a)\theta(x_1-a)\theta(t-x_1+a)
+\biggr].
+\label{eq:formal solution of two-photon wavefunction}
+\end{aligned}
+\end{equation}
+The detailed discussion of this problem is reported elsewhere \cite{FangNM17}.
 
-While delay PDEs have emerged in other scientific and engineering contexts and been numerically studied using, for example, the method of lines \cite{Zubik_Kowal_Sch08}, we emphasize that as far as we understand, those approaches cannot be directly applied to our problem, as the delay term in Eq.~\eqref{eq:double-excitation delay differential eq} lies in both $x$ and $t$ dimensions, contrary to the common notion of delay PDE in which only one of the dimensions is delayed \cite{Zubik_Kowal_Sch08}. Furthermore, to the best of our knowledge there is no general-purpose solvers for delay PDE. As a result, we implement the finite-difference time-domain (FDTD) method and demonstrate its validity in this paper.  
+While delay PDEs have emerged in many scientific and engineering contexts and been numerically studied using, for example, the method of lines \cite{Zubik_Kowal_Sch08}, we emphasize that as far as we understand, those approaches cannot be directly applied to our problem, as the delay term in Eq.~\eqref{eq:double-excitation delay differential eq} lies in both $x$ and $t$ dimensions (i.e., it's a non-local delay), contrary to the common situation of delay PDE in which only one of the dimensions is delayed \cite{Zubik_Kowal_Sch08}. In other words, Eq.~\eqref{eq:double-excitation delay differential eq} cannot be converted to a system of ordinary differential equations (ODE) that are discretized in $x$ and then solved by an ODE solver along $t$. Furthermore, to the best of our knowledge there is no general-purpose solvers for delay PDE. As a result, we implement the finite-difference time-domain (FDTD) method and demonstrate its validity in this paper.  
 
-The main purpose of this work is therefore three-fold: (i) to numerically solve Eq.~\eqref{eq:double-excitation delay differential eq} using FDTD; (ii) to provide a proof of concept that FDTD works well in tackling complex-valued, spatial-temporal-delayed PDE; (iii)  to present a numerically exact solution to the \textit{time-dependent, multi-photon scattering} problem in waveguide QED.
+The main purpose of this work is therefore three-fold: (i) to numerically solve Eq.~\eqref{eq:double-excitation delay differential eq} using FDTD; (ii) to provide a proof of concept that FDTD works well for tackling complex-valued, spatially non-local delay PDE and that certain degree of parallelism can be achieved; (iii)  to present a numerically exact solution to the \textit{time-dependent, multi-photon scattering} problem in waveguide QED.
 
 
 \subsection{Implementation and architecture}
@@ -167,7 +196,7 @@ FDTD is widely used by engineers, especially those designing antennas, doing com
 %In the context of our study, however, it is very similar to the central difference method introduced in standard numerical analysis \cite{NumericalRecipes}. As a result, 
 Below we briefly discuss how FDTD works, and refer interested readers to Refs.~\cite{FDTDbook,FDTDnote} for the details.
 
-Like most of differential-equation solving methods, FDTD discretizes the spacetime, and different discretizations have different pros and cons. For simplicity we choose a square lattice, and note in passing that in real FDTD applications the Yee lattice is more common, as the conservation laws of EM fields are trivially true on the Yee lattice. Let's set the ratio of the spatial step $\Delta_x$  to the temporal step $\Delta_t$  equal to the speed of light $c=1$ so that $\Delta_t=\Delta_x=\Delta$. (In FDTD, $\Delta_x/\Delta_t\geq c$ is called the Courant condition and is hold when the algorithm is stable. See Appendix \ref{appen: stability} for a simplified discussion on stability.)
+Like most of differential-equation solving methods, FDTD discretizes the spacetime, and different discretizations have different pros and cons. For simplicity we choose a square lattice, and note in passing that in real FDTD applications the Yee (staggered) lattice is more common, as the conservation laws of EM fields are trivially true on the Yee lattice. In the following we set the ratio of the spatial step $\Delta_x$  to the temporal step $\Delta_t$  equal to the speed of light $c=1$ so that $\Delta_t=\Delta_x=\Delta$. In FDTD, $\Delta_x/\Delta_t\geq c$ is called the Courant condition and is hold when the algorithm is stable. See Appendix \ref{appen: stability} for a simplified discussion on stability.
 
 
 \begin{figure}[bhtp]
@@ -205,23 +234,28 @@ which is referred to as a ``bar'' in the code. The reason for using bars over sq
 	\centering
 	\caption{\label{table:input} Summary of all input parameters accepted by our program.}
 %	\begin{ruledtabular} % add double rules; RevTeX4 only
-		\begin{tabular}{|c| p{9cm} |c| c|}
+		\begin{tabular}{|c| p{8cm} |c| c|}
 			\hline
 			\textbf{Parameter} &  \textbf{Description} & \textbf{Mandatory} & \textbf{Default} \\ \hline
 			\texttt{Nx} & Defined such that total grid points (to be solved) along $x$ is $2N_x+1$ (so $x/\Delta\in[-N_x,N_x]$) & Yes & n/a \\ \hline
 			\texttt{Ny} & Total grid points along $t$ (so $t/\Delta\in[0,N_y-1]$) & Yes & n/a \\ \hline
 			\texttt{nx} & $n_x = 2a/\Delta$; $n_x$ needs to be an integer multiple of 2 and $n_x\leq2N_x$ & Yes & n/a \\ \hline
 			\texttt{Delta} & Step size $\Delta$ (See Appendix~\ref{appen: translation}) & Yes &  n/a\\ \hline
-			\texttt{k} & Driving frequency $k$ (in units of $\Delta^{-1}$) & Yes & n/a \\ \hline
+			\texttt{k} & Driving frequency $k$ (in units of $\Delta^{-1}$) & Yes & 0 \\ \hline
+			\texttt{k1}, \texttt{k2} & Incident frequencies for photon \#1 (\#2) (in units of $\Delta^{-1}$) & No\tablefootnote{Needed when \texttt{init\_cond=3} and \texttt{identical\_photons=0}.\label{note6}}  & 0 \\ \hline
 			\texttt{w0} & 2LS frequency $\omega_0$ (in units of $\Delta^{-1}$) & Yes & n/a\\ \hline
 			\texttt{gamma} & 2LS decay rate $\Gamma$ (in units of $\Delta^{-1}$) & Yes & n/a\\ \hline
-			\texttt{init\_cond} & 1: two-photon scattering (plane wave); 2: stimulated emission (single-photon exponential wavepacket) & Yes & 0 \\ \hline
-			\texttt{alpha} & Wavepacket width $\alpha$ (dimensionless) & No\tablefootnote{Needed when \texttt{init\_cond=2}, and ineffective when \texttt{init\_cond=1}.} & 0 \\ \hline
-			\texttt{save\_chi} & Output $\chi(a+\Delta, a+\Delta+\uptau, t)$ as plain text & No\tablefootnote{The four options cannot be simultaneously turned off (set to 0), or no output will be generated.\label{note2}} & 0 \\ \hline
+			\texttt{init\_cond} & 1: two-photon scattering (plane wave); 2: stimulated emission (one-photon exponential wavepacket); 3: two-photon exponential wavepacket & Yes & 0 \\ \hline
+			\texttt{alpha} & Wavepacket width $\alpha$ (in units of $\Gamma$) & No\tablefootnote{Needed when \texttt{init\_cond=2}, and ineffective when \texttt{init\_cond=1}.} & 0 \\ \hline
+			\texttt{alpha1}, \texttt{alpha2} & Wavepacket width for photon \#1 (\#2) (in units of $\Gamma$) & No\textsuperscript{\ref{note6}}& 0 \\ \hline
+			\texttt{identical\_photons} & whether or not the two incident photons are the same & No & 1 \\ \hline
+			\texttt{save\_chi} & Output $\chi(a+\Delta, a+\Delta+\uptau, t)$ as plain text & No\tablefootnote{These options cannot be simultaneously turned off (set to 0), or no output will be generated.\label{note2}} & 0 \\ \hline
 			\texttt{save\_psi} & Output $\psi(x, t)$ as plain text & No\textsuperscript{\ref{note2}} & 0 \\ \hline
 			\texttt{save\_psi\_binary} & Output $\psi(x, t)$ as binary & No\textsuperscript{\ref{note2}} & 0 \\ \hline
+			\texttt{save\_psi\_square\_integral} & Output $\int dx|\psi(x, t)|^2$ as plain text & No\textsuperscript{\ref{note2}} & 0 \\ \hline
 			\texttt{measure\_NM} & See Appendix~\ref{append: NM} & No\textsuperscript{\ref{note2},}\tablefootnote{Requires \texttt{init\_cond=2}.} & 0\\ \hline
 			\texttt{Tstep} & Output the wavefunctions for every $\texttt{Tstep}+1$ temporal steps& No & 0 \\ \hline
+			\texttt{Nth} &  Number of solvers & No & 1 \\ \hline
 		\end{tabular}
 %	\end{ruledtabular}
 \end{table}
@@ -245,7 +279,7 @@ The corresponding layout is shown in Fig.~\ref{fig:FDTD_schematic}. Note that (a
 %What matters is the dimensionless quantities such as $(\omega_0\Delta)$ and $(\Gamma\Delta)$, not $\Delta$ itself. In the current implementation, we still explicitly keep $\Delta$, but it is not necessary if the code is designed in a different way. Appendix \ref{appen: translation} provides a further discussion.
 
 
-It is illustrative to see how the FDTD solves Eq.~\eqref{eq:double-excitation delay differential eq}. Fig.~\ref{fig:FDTD_grid} shows a snapshot of the space-then-time marching strategy. Each term in Eq.~\eqref{eq:double-excitation delay differential eq} has a different color for easy identification, and we use all previously solved values to solve for the top-right corner of the blue square, which is circled in red. Note that there are four colors that each has only two points (the ``bars''), because when we Taylor-expand at the black cross, those terms are expanded at the center of the two points. 
+It is illustrative to see how the FDTD solves Eq.~\eqref{eq:double-excitation delay differential eq}. Fig.~\ref{fig:FDTD_grid} shows a snapshot of the FDTD solver which marches in a space-then-time manner. Since the delay PDE is \emph{chiral} (unidirectional) \cite{FangNM17}, for a given time $t$ the solver (conceptually represented by the black cross) moves from the edge of boundary condition toward positive $x$, then advances one step $\Delta$ in time and repeats. Each term in Eq.~\eqref{eq:double-excitation delay differential eq} has a different color for easy identification, and we use all previously solved values to solve for the top-right corner of the blue square, which is circled in red. Note that there are four colors that each has only two points (the ``bars''), because when we Taylor-expand at the black cross, those terms are expanded at the center between the two points. 
 %\begin{equation}
 %	f(x+\Delta/2,t)\approx \frac{1}{2}\biggl( f(x,t) + f(x+\Delta,t)\biggr)\quad \text{(bar)},
 %\end{equation}
@@ -254,24 +288,23 @@ It is illustrative to see how the FDTD solves Eq.~\eqref{eq:double-excitation de
 \begin{figure}[htb]
 	\centering
 	\includegraphics[scale=0.4]{FDTD_grid}
-	\caption{An example of calculating $\psi(x,t)$ for the circled point on the square lattice. The slant lines represent light cones extended from the coupling points at $x=\pm a$. $n_x$ is chosen to be 4 for illustrative purposes, and the black cross denotes the Taylor-expansion point. The other colored points contribute to the point to be solved [each color corresponds to a term in Eq.~\eqref{eq:double-excitation delay differential eq}].}
+	\caption{An example of calculating $\psi(x,t)$ for the circled point on the square lattice. The slant lines represent light cones extended from the coupling points at $x=\pm a$. $n_x$ is chosen to be 4 for illustrative purposes, and the black cross denotes the Taylor-expansion point, referred to as the solver. The other colored points contribute to the point to be solved [each color corresponds to a term in Eq.~\eqref{eq:double-excitation delay differential eq}].}
 	\label{fig:FDTD_grid}
 \end{figure}
 
-Furthermore, from Fig.~\ref{fig:FDTD_grid} one can appreciate the fact that in general the system is highly ``non-Markovian,'' since solving the wavefunction at a certain time needs to look up the system's memory (solved values at earlier times); that is, the quantum system has a dependence on its past history. In terms of programming, this brings in a heavy burden because one can no longer discard values at earlier times, as typically done in solving ordinary PDEs. Instead, one needs to keep all grid points in the memory, so the hardware constraints are an important factor. 
-
+Furthermore, from Fig.~\ref{fig:FDTD_grid} one can appreciate the fact that in general the system is highly ``non-Markovian,'' a jargon widely used in the community of open quantum systems \cite{RivasRPP14,BreuerRMP16,deVegaRMP17}, since solving the wavefunction needs to look up the system's memory (solved values at earlier times); that is, the quantum system has a dependence on its past history. In terms of programming, this brings in a heavy burden because one can no longer discard values at earlier times by flushing them from memory to disk, as typically done in solving ordinary PDEs. Instead, one needs to keep all grid points in the memory, so the hardware capacity is an important factor; doing frequent I/O is not an efficient option. 
 For example, as we are solving a complex wavefunction,
 depending on the grid size it can be very memory-consuming (each grid point stores a complex double number and thus takes 16 bytes)
 %--- a grid size smaller than 12500*40000 is enough to crash a computer with 8GB ram!) 
-and space-consuming (the wavefunction is written to a plain txt when the calculation is done). So use the program with caution. A quick estimation for memory usage is $32N_xN_y/1024^3$ (in GB), and for disk usage divided by $\texttt{Tstep}+1$.
+and space-consuming (the wavefunction is written to a plain txt when the calculation is done). So use the program with caution. A quick estimation for memory usage is roughly $32N_xN_y/1024^3$ (in GB), and for disk usage divided by $\texttt{Tstep}+1$.
 
-Currently the FDTD program can solve two classes of problems, and for each class the boundary condition (green in Fig.~\ref{fig:FDTD_schematic}) is given by known analytical expressions \cite{FangNM17}:
+Currently the FDTD program can solve three classes of problems, and for each class the boundary condition (green in Fig.~\ref{fig:FDTD_schematic}) is given by known analytical expressions \cite{FangNM17}:
 \begin{enumerate}
 	\item[(a)] \textit{Two-photon scattering}: the incoming photons are described by continuous wave, $\chi(x_1, x_2, 0) = A^2 \exp[i k (x_1+x_2)]\theta(-a-x_1)\theta(-a-x_2)$, and the initial condition for $\psi$ is simply $\psi(x,0)=0$ (the 2LS is initially in its ground state). Therefore, we need to supply three more parameters that are physics-related: \texttt{k}, \texttt{w0}, and \texttt{gamma}; see Table~\ref{table:input}. So for this case the program needs 7 mandatory parameters in total.
 	
 In $x<-a$, the solution to Eq.~\eqref{eq:double-excitation delay differential eq} is 
 \begin{equation}
-\psi(x,t) = \sqrt{2}e^{ik(x-t)}e_0(t), 
+\psi(x,t) = \sqrt{2}Ae^{ik(x-t)}e_0(t), 
 \label{eq: BC two-photon scattering}
 \end{equation}
 where $e_0(t)$ is the 2LS wavefunction, solved in the one-excitation sector assuming $e_0(0)=0$ and $\phi(x, 0)=A e^{ikx}\theta(-a-x)$,
@@ -286,28 +319,73 @@ where $e_0(t)$ is the 2LS wavefunction, solved in the one-excitation sector assu
 where $p=k-\omega_0+i\Gamma/2$, and $\gamma(n, z)$ is the (lower) incomplete Gamma function \cite{NISThandbook}. We note that evaluating $\gamma(n, z)$ on the complex plane is in general a non-trivial task; see the discussion in Appendix~\ref{appen: incom_gamma}.
 The above expressions are used to generate initial and boundary conditions. Finally, we note that $A=1$ is set in the program for convenience.
 %, but one should be cautious when interpreting its meaning; see the discussion in Ref.~\cite{FangNM17}.
-    \item[(b)] \textit{Stimulated emission}: a single-photon exponential wavepacket is sent in, with the 2LS initially excited:
+
+    \item[(b)] \textit{Stimulated emission}: a single-photon exponential wavepacket
 \begin{equation}
-	\psi(x,0)=i\sqrt{\alpha \Gamma} e^{ikx+\alpha\Gamma(x+a)/2}\theta(-x-a),
+	\varphi(x)=i\sqrt{\alpha \Gamma} e^{ikx+\alpha\Gamma(x+a)/2}\theta(-x-a),
 	\label{eq:single-photon exponential wavepacket}
 \end{equation}
-and $\chi(x_1, x_2, 0)=0$. So one also needs to specify the dimensionless wavepacket width $\alpha$ in the input file in addition to the seven mandatory parameters for this case. In $x<-a$, the boundary condition is given by 
+ is sent in, with the 2LS initially excited, so $\psi(x,0)=\varphi(x)$ and $\chi(x_1, x_2, 0)=0$. In this case, one also needs to specify the wavepacket width $\alpha$ in the input file in addition to the seven mandatory parameters for this case. In $x<-a$, the boundary condition is given by 
 \begin{equation}
-\psi(x,t) = \psi(x-t, 0)\times e_1(t),
+\psi(x,t) = \varphi(x-t)\times e_1(t),
 \end{equation}
 where $e_1(t)$ is again the 2LS wavefunction solved in the one-excitation sector assuming $e_1(0)=1$ and $\phi(x, 0) =0$,
 \begin{equation}
 e_1(t)=e^{-(i\omega_0+\frac{\Gamma}{2})t}\sum_{n=0}^{\infty}\frac{1}{n!}\left[\frac{\Gamma}{2}e^{(i\omega_0+\frac{\Gamma}{2})2a}(t-2na)\right]^n\theta(t-2na).
 \label{eq:spontaneous emission solution}
 \end{equation}
+
+	\item[(c)] \emph{Two-photon exponential wavepacket}: 
+	%The photon-atom bound state in principle can happen when more than two photons are sent into the system, and result in significant portion of the photons trapped around the qubit. To explore the existence of such a bound state, it is necessary to solve the wavefunctions in the two-excitation sector. 
+	The corresponding initial conditions are $\psi(x,0)=0$ and
+\begin{equation}
+\chi(x_1, x_2, 0) = \frac{A}{\sqrt{2}}\left[\varphi_1(x_1)\varphi_2(x_2)+\varphi_1(x_2)\varphi_2(x_1)\right],
+\end{equation} 
+where $A$ is the normalization constant such that $\iint dx_1 dx_2 |\chi(x_1, x_2, 0)|^2=1$ and $\varphi_i(x)$ is the $i$-th photonic wavepacket, assumed of the form Eq.~\eqref{eq:single-photon exponential wavepacket} with incident frequency $k_i$ and width $\alpha_i$.
+%\begin{equation}
+%\varphi_i(x) = i\sqrt{\alpha_i\Gamma}e^{i (k_i- i \alpha_i\Gamma/2)(x+a)}\theta(-x-a),
+%\end{equation}
+The normalization constant can be chosen to be positive without loss of generality:
+\begin{equation}
+A = \sqrt{\frac{4(k_1- k_2)^2+(\alpha_1+\alpha_2)^2\Gamma ^2}{4(k_1- k_2)^2 +(\alpha_1+\alpha_2)^2\Gamma ^2+4\alpha_1\alpha_2\Gamma ^2}}.
+\end{equation}
+
+Following our standard procedure, we first solve for $\psi(x<-a, t)$ and then plug it into the FDTD code to solve in the region $x>-a$. We find that the solution is given by \cite{OurBIC}
+\begin{equation}
+\psi(x<-a, t) = A \left[\varphi_1(x-t) e_0^{(2)}(t) + \varphi_2(x-t) e_0^{(1)}(t) \right],
+\end{equation}
+where $e_0^{(i)}(t)$ is the qubit wavefunction in the one-excitation sector, solved subject to $e(0)=0$ and $\phi(x,0)=\varphi_i(x)$:
+\begin{align}
+e(t)&=\frac{\sqrt{\alpha\Gamma^2/2} (e^{-(i\omega_0+\Gamma /2)t}-e^{-(ik+\alpha\Gamma/2)t})}{p} 
+-i\sqrt{\alpha\Gamma} \sum_{n=1}^{\infty}\frac{\left(\frac{\Gamma}{2}\right)^{n-1/2}}{n!}
+\Bigl[(t-2na)^n e^{-(i\omega_0+\Gamma/2)(t-2na)}\nonumber \\
+&\quad\quad+\frac{i^n(k-\omega_0-i\alpha\Gamma/2)}{p^{n+1}}\gamma(n+1,-ip(t-2na))e^{-(ik+\alpha\Gamma/2)(t-2na)}
+\Bigr]\theta(t-2na)
+\label{eq:exact solution single-photon exponential}
+\end{align}
+with $p=k-\omega_0+i\Gamma/2(1-\alpha)$.
+Note that when the two photons are identical, $\varphi_1=\varphi_2=\varphi$, the expression above reduces to the known form: $\psi(x<-a, t) = \sqrt{2}\varphi(x-t)e_0(t)$ [cf.\ Eq.~\eqref{eq: BC two-photon scattering}]. 
 \end{enumerate}
 One could easily tweak the code to accept other kinds of initial conditions, but the strategy for solving Eq.~\eqref{eq:double-excitation delay differential eq} remains the same for all possible scenarios. It is important to note that if we cannot provide analytical solutions in $x<-a$ as the boundary condition, we cannot solve Eq.~\eqref{eq:double-excitation delay differential eq} numerically. But we do not need to know more either --- the constraint $n_x\leq 2N_x$ guarantees that knowing the wavefunction in $x<-a$ is sufficient, as it makes the line $x=-a$ lie outside of the green region in Fig.~\ref{fig:FDTD_schematic} so that the boundary condition is completely determined. 
 %Currently the boundary condition is generated in the code using the above expressions, because this is more efficient than generating it elsewhere and then loading the data into the memory.
 
-Finally, to calculate various non-Markovian measures using the solution of $\psi$, instead of post-processing it is much easier to do most of the work \textit{in situ}. To construct the geometric measure \cite{LorenzoPRA13}, two functions $\lambda(t)$ and $\mu(t)$ can be calculated \cite{FangNM17}.\footnote{Due to historical reasons, in Ref.~\cite{FangNM17} $\mu(t)$ is called $c(t)$ and $\lambda(t)$ is called $\Delta(t)$, respectively. The authors regret the inconvenience.\label{note5}}
+Finally, to calculate various non-Markovian measures using the solution of $\psi$, instead of post-processing it is much easier to do most of the work \textit{in situ}. To construct the geometric measure \cite{LorenzoPRA13}, two functions $\lambda(t)$ and $\mu(t)$ can be calculated \cite{FangNM17}.\footnote{For some reasons, in Ref.~\cite{FangNM17} $\mu(t)$ is called $c(t)$ and $\lambda(t)$ is called $\Delta(t)$, respectively. The author regrets the inconvenience.\label{note5}}
 % and the BLP measure \cite{BreuerPRL09}. 
 The detail of the implementation is presented in Appendix~\ref{append: NM}. 
 
+\subsection{Parallelization}
+As discussed above, due to the non-local delay term there is a strong data dependency --- the present solution depends on its past history. However, even with such a severely constrained problem, interestingly the delay PDE can still be solved parallelly. By parallelism here we mean that the simultaneous presence of multiple FDTD solvers in the spacetime is allowed, see the schematic shown in Fig.~\ref{fig: FDTD multithread marching}. Great care must be taken, though, in order to satisfy the constraints set by the structure of the delay PDE \eqref{eq:double-excitation delay differential eq}. Specifically, each solver must be one temporal step above and at least $n_x$ spatial steps behind its previous partner (called predecessor hereafter), or the causality would not be preserved correctly; that is, one solver may read the value at certain point which is yet to be solved by another solver. It turns out that it is beneficial to have a ``cyclic lag'' relation among the solvers: denoting the total number of solvers as \texttt{Nth}, which can be set in the input file, then \#2 is lagged behind \#1, \#3 behind \#2, etc., and finally \#1 can be set behind \#\texttt{Nth} once it reaches the grid boundary. We find that such a wrap-around can increase performance and is easy for coding. 
+
+\begin{figure}[hbtp]
+	\centering
+	\includegraphics[width=0.7\textwidth, trim=12.8cm 0 0 0, clip]{FDTD_multithread_schematic_2}
+	\caption{A snapshot of multiple marching FDTD solvers. Each color and shape corresponds to points read and written by a certain solver (thread). The points to be solved by each solver are empty, while known points are filled. Note that each solver is one step above and at least $n_x$ steps behind its predecessor (here $n_x=4$).}
+	\label{fig: FDTD multithread marching}
+\end{figure}
+
+In the current implementation, we utilize the ``wait-and-signal'' mechanism provided by POSIX Threads (pthreads). Each solver is marched by an independent thread and has a lock for its position and a condition variable for waiting for its predecessor. Before attempting to solve at a certain point, it must look up its predecessor's position and see whether the constraint is satisfied or not. If not, then it must wait for the signal sent by its predecessor before proceeding. 
+Using pthreads' locks not only allows a solver to communicate with and wait for its predecessor, but also preserves cache coherence, which is important since it is possible that a solver needs to access a value immediately after it's solved by another solver. 
+In the end of the next section, we present a time measurement for a typical problem size required by the physics \cite{FangNM17,FangPRA15err,OurBIC}.
 
 \subsection{Quality control}
 %\section{Validation}
@@ -382,21 +460,35 @@ Note two common features in these plots: (a) the error is zero in the initial st
 
 For the second test, we generated the analytical expressions of $\psi$ in the first four tiles (the fifth one took too much time to compute) in \textit{Mathematica} \cite{FangNM17} and then compared the values on the grid points of FDTD. The numerical result agreed well too (not shown).
 
-Finally, to compare with the scattering theory we can construct the two-photon wavefunction $\chi$ using the calculated $\psi$ according to the formal solution of $\chi$
-\begin{align}
-\chi(x_1, x_2, t)& = \chi(x_1-t, x_2-t, 0)-\frac{V}{\sqrt{2}}\biggl[
-\psi(x_1-x_2-a, t-x_2-a)\theta(x_2+a)\theta(t-x_2-a)\nonumber\\
-&\quad
--\psi(x_1-x_2+a, t-x_2+a)\theta(x_2-a)\theta(t-x_2+a) +\bigl(x_2 \leftrightarrow x_1\bigr)
+Finally, to compare with the scattering theory we can construct the two-photon wavefunction $\chi(x_1, x_2, t)$ using the calculated $\psi$ according to the formal solution of $\chi$, Eq.~\eqref{eq:formal solution of two-photon wavefunction},
+%\begin{align}
+%\chi(x_1, x_2, t)& = \chi(x_1-t, x_2-t, 0)-\frac{\sqrt{\Gamma}}{2}\biggl[
+%\psi(x_1-x_2-a, t-x_2-a)\theta(x_2+a)\theta(t-x_2-a)\nonumber\\
 %&\quad
-%+\psi(x_2-x_1-a, t-x_1-a)\theta(x_1+a)\theta(t-x_1-a)\nonumber\\
-%&\quad
-%-\psi(x_2-x_1+a, t-x_1+a)\theta(x_1-a)\theta(t-x_1+a)
-\biggr],
-\label{eq:formal solution of two-photon wavefunction}
-\end{align}
+%-\psi(x_1-x_2+a, t-x_2+a)\theta(x_2-a)\theta(t-x_2+a) +\bigl(x_2 \leftrightarrow x_1\bigr)
+%%&\quad
+%%+\psi(x_2-x_1-a, t-x_1-a)\theta(x_1+a)\theta(t-x_1-a)\nonumber\\
+%%&\quad
+%%-\psi(x_2-x_1+a, t-x_1+a)\theta(x_1-a)\theta(t-x_1+a)
+%\biggr],
+%\label{eq:formal solution of two-photon wavefunction}
+%\end{align}
 where the coordinates $x_1$ and $x_2$ should be chosen as $x_{1,2}\geq +a$ for capturing the outgoing fields. In the program, $\chi$ is calculated by setting $x_1=a+\Delta$ and $x_2=a+\Delta+\uptau$, with $\uptau=x_2-x_1$ being the separation of the two detectors.\footnote{We note that by definition the two-photon correlation function is given by $g_2(\uptau) = |\chi(x_d, x_d+\uptau, t\rightarrow\infty)|^2$ with $x_d\geq+a$.} The results are shown in Figs.~\ref{fig:g2 piover4}-\ref{fig:g2 NM}. The agreement is quite well, even in the non-Markovian regime (Fig.~\ref{fig:g2 NM}). Because evaluating Eq.~\eqref{eq:formal solution of two-photon wavefunction} requires the full history of $\psi$, it is clear the program is valid for all regions in the spacetime.
-More results generated by our FDTD program are discussed in Ref.~\cite{FangNM17}. 
+More results generated by our FDTD program are discussed in Refs.~\cite{FangNM17,FangPRA15err,OurBIC}. 
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.5\textwidth]{FDTD+pthreads_time_measurement2}
+	\caption{Measured elapsed time as a function of the number of solvers (threads) \texttt{Nth}. The test is run 10 times for each \texttt{Nth}. For single thread, the measurements without pthreads overhead (light blue circles) are also shown. The magenta curve is of the form $A \exp(-B \texttt{Nth})+C$ and the black dashed curve is $A/\texttt{Nth}+C$, both of which are fitted by all data points with $\texttt{Nth}=1$ excluded. Input parameters: $N_x=64800$, $N_y=60000$, $n_x=960$, $\Delta=2.618\times10^{-4}$, \texttt{init\_cond}$=2$, $k=\omega_0=100$, $\Gamma=5$, and $\alpha=0.5$. Test machine: Intel Xeon CPU E5-2670 \@ 2.6 GHz with 32 logical cores and 128 GB physical memory.}
+	\label{fig: elapsed time for multithread}
+\end{figure}
+
+We next comment briefly on the performance of multi-thread support. In Fig.~\ref{fig: elapsed time for multithread} we report the elapsed time for solving Eq.~\eqref{eq:double-excitation delay differential eq} as a function of the number of threads (specified by \texttt{Nth}) for the same input parameters, which are chosen to roughly match those used in Refs.~\cite{FangNM17,FangPRA15err,OurBIC}. It is clear that while the scaling is not ideal (i.e., not $1/N$, the black dashed curve), we do observe a speedup. In order to have a fair comparison, note that when single thread is used, the pthreads library would bring unnecessary overhead. Therefore, we also report in Fig.~\ref{fig: elapsed time for multithread} the measurement without compiling with and linking to pthreads (light blue circles), compared with which the speedup is about 2x using 32 threads. 
+
+While a 2x speedup may not be as good as one expects, we emphasize that this is the \emph{theoretical upper bound} for the parallelization approach that we introduced. It is because while solver \#1 (or whoever at the bottom of the solver swarm) moves freely, all others have to wait for it either directly (such as \#2) or indirectly (for example, \#3 waits for \#2, \#4 waits for \#3 and so on). So, if the message passing among the swarm has little to zero latency, i.e. signaling happens almost instantaneously compared to the actual computation, then the rest of the swarm moves collectively as one giant thread, leading to a factor of 2x. It is an open question whether there is room for further improvement, preferably without using condition variables or mutexes.
+
+We note in passing that the pthreads overhead can be consistently estimated by either taking the difference between mean elapsed time with and without pthreads, or by the constant shift $C$ from the fittings (curves in Fig.~\ref{fig: elapsed time for multithread}). Therefore, on a machine with many cores the elapsed time is dominated by the overhead only. 
+
 
 \section{Availability}
 \subsection{Operating system}
@@ -409,7 +501,7 @@ The FDTD code is written in C and conforms the C99 standard. Pre- and post-proce
 As discussed earlier, depending on the input parameters the memory and disk usages of the program can be excessive, so the users should choose the parameters wisely.
 
 \subsection{Dependencies}
-None.
+To enable the multi-thread support (which is turned on by default), compiling with and linking to pthreads are required. To explicitly disable it, use ``make CFLAGS=-D\_\_FDTD\_NO\_PTHREAD\_SUPPORT\_\_''.
 
 \subsection{List of contributors}
 Yao-Lung Leo Fang (developer)
@@ -437,15 +529,15 @@ Yao-Lung Leo Fang (developer)
 English.
 
 \section{Reuse potential}
-The program provides a numerically exact, time-dependent solution to the problem of a single 2LS placed in front of a mirror scattered by either a one-photon or two-photon initial state, so for waveguide-QED researchers this program can be very useful for solving the two classes of problems as discussed earlier. Arbitrary wavepackets or other forms of initial condition can be incorporated into the code with minor modification. 
+The program provides a numerically exact, time-dependent solution to the problem of a single 2LS placed in front of a mirror scattered by either a one- or two-photon initial state, so for waveguide-QED researchers this program can be very useful for solving the three classes of problems as discussed earlier. Arbitrary wavepackets or other forms of initial condition can be incorporated into the code with minor modification. 
 
-More flexibility, such as coupling arbitrary number of 2LS to the waveguide, can be gained by re-implementing this program in an OO language (C++, Python, etc). In fact, the code has been written in the OO-style by (i) compacting all relevant fields into a C struct (roughly equivalent to a C++/Python class) named \texttt{grid}, (ii) passing ``this'' pointer to a \texttt{grid} instance when calling functions, as if they were member functions of the \texttt{grid} class, and (iii) following RAII. As a result, rewriting in C++, for example, should be of minimal work. Of course, the grid layout must be carefully designed in such a scenario to minimize memory usage. Currently the program is single-threaded; a multi-thread implementation is quite challenging in our opinion, as thread competitions for marching the wavefunction could bring in significant overhead.
+More flexibility, such as coupling a giant atom that has arbitrary number of legs to the waveguide \cite{GustafssonSci14,FriskKockumPRA14,GuoPRA17,GiantAtom}, can be gained by re-implementing this program in an OO language (C++, Python, etc). In fact, the code has been written in the OO-style by (i) compacting all relevant fields into a C struct (roughly equivalent to a C++/Python class) named \texttt{grid}, (ii) passing ``this'' pointer to a \texttt{grid} instance when calling functions, as if they were member functions of the \texttt{grid} class, and (iii) following RAII. As a result, rewriting in C++, for example, should be of minimal work. Of course, the grid layout must be carefully designed in such a scenario to minimize memory usage. %Currently the program is single-threaded; a multi-thread implementation is quite challenging in our opinion, as thread competitions for marching the wavefunction could bring in significant overhead.
 
-Finally, this program serves as a proof of concept for mathematicians, scientists and engineers who are interested in solving complicated delay PDE using FDTD. For development discussions, please either open an issue on GitHub or contact the authors. Users and developers who are benefited from this program are strongly encouraged to cite both this paper as well as Ref.~\cite{FangNM17}.
+Finally, this program serves as a proof of concept for mathematicians, scientists and engineers who are interested in solving complicated delay PDE using parallel FDTD. Important issues such as general proof of stability, multi-thread implementation, and robust algorithm for solving 1+1D delay PDE remain challenging. For development discussions, please either open an issue on GitHub or contact the authors. Users and developers who are benefited from this program are strongly encouraged to cite both this paper as well as Ref.~\cite{FangNM17}.
 
 \subsection{Acknowledgments}
 %\subsection{Funding statement}
-	We acknowledge financial support from U.S.\ NSF (Grant No. PHY-14-04125) and fruitful discussion with Harold U.\ Baranger and Francesco Ciccarello.
+	We acknowledge financial support from U.S.\ NSF (Grant No. PHY-14-04125) and the Brookhaven National Laboratory's Laboratory Directed Research and Development project \#17-029, and fruitful discussion with Harold U.\ Baranger, Francesco Ciccarello and Meifeng Lin.
 
 \subsection{Competing interests}
 The authors declare that they have no competing interests.
@@ -624,6 +716,6 @@ Finally, we note that \texttt{Tstep} should be wisely chosen so that after inter
 \end{appendices}
 
 \bibliographystyle{jors-harvard} % Harvard style for JORS
-\bibliography{WQED_2016}
+\bibliography{WQED_2016,\jobname}
 
 \end{document}

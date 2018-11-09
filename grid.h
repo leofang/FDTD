@@ -16,6 +16,14 @@
 #include <complex.h> 
 #include "kv.h"
 
+//two possibilities of not having _OPENMP:
+//either not linked to runtime library or explicitly cancelled during compilation
+#ifdef _OPENMP 
+  #define __FDTD_OPENMP_SUPPORT__ //this flag is used internally
+  #include <omp.h>
+#endif
+  
+
 /* 
    Create a grid which stores the wavefunction and other relavant information.
    The layout of the grid should look like this:
@@ -92,6 +100,7 @@ struct _grid
 
    //program options
    int save_chi;          //whether or not to save the two-photon wavefunction to file (default: no)
+   int save_chi_map;      //whether or not to save the two-photon wavefunction as a 2D map to file (default: no)
    int save_psi;          //whether or not to save the wavefunction to file (default: no)
    int save_psi_square_integral; //whether or not to save \int dx |psi(x,t)|^2 to file (default: no)
    int save_psi_binary;   //whether or not to save the wavefunction to binary file (default: no)
@@ -99,6 +108,7 @@ struct _grid
    int identical_photons; //whether or not the two photons are identical (default: yes; only effective for init_cond=3)
    size_t Tstep;          //for output of save_psi: save psi for every (Tstep+1) temporal steps
    int measure_NM;        //currently it means whether to save e0 and e1 or not //TODO: extend this part
+   size_t Nth;            //number of threads
 
    //input parameters (stored for convenience)
    kvarray_t * parameters_key_value_pair;
@@ -122,10 +132,20 @@ void print_psi(grid * simulation);
 void save_psi(grid * simulation, const char * filename, double (*part)(double complex));
 void save_psi_binary(grid * simulation, const char * filename);
 void save_chi(grid * simulation, const char * filename, double (*part)(double complex));
+void save_chi_map(grid * simulation, const char * filename, double (*part)(double complex));
 void save_psi_square_integral(grid * simulation, const char * filename);
+void save_BIC(grid * simulation, const char * filename);
+void save_photon_intensity(grid * simulation, const char * filename);
 void prepare_qubit_wavefunction(grid * simulation);
 void initialize_e0(grid * simulation);
 void initialize_e1(grid * simulation);
 void calculate_normalization_const(grid * simulation);
+void check_normalization(grid * simulation);
+#ifdef __FDTD_OPENMP_SUPPORT__
+void initialize_OpenMP_team(grid * simulation);
+#endif
+
+// // make W = (i*w0+Gamma/2) as a global variable
+// extern double complex W;
 
 #endif

@@ -9,12 +9,46 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include "kv.h"
 #include "grid.h"
 #include "special_function.h"
 #include "dynamics.h"
-#include <string.h>
 #include "NM_measure.h"
+
+double getRealTime(); //defined in getRealTime.c
+extern double complex W; //declared in main.c
+
+
+#ifdef __FDTD_OPENMP_SUPPORT__
+void initialize_OpenMP_team(grid * simulation)
+{
+   int temp;
+   #pragma omp parallel
+   {
+      #pragma omp single
+      {
+         temp = omp_get_num_threads();
+      }
+   }
+
+   //caveat: it could be possible that users forget to set Nth in the input,
+   //and in this case Nth is set as 1
+   if(temp != simulation->Nth)
+   {
+      fprintf(stderr, "%s: OMP_NUM_THREADS is inconsistent with Nth. Using the latter...\n", __func__);
+      omp_set_num_threads(simulation->Nth);
+   }
+
+   #pragma omp parallel
+   {
+      #pragma omp single
+      {
+         printf("FDTD: Using %i threads...\n", omp_get_num_threads());
+      }
+   }
+}
+#endif
 
 
 //This function returns the normalization constant A for the two-photon initial state used for init_cond=3
@@ -44,8 +78,8 @@ double complex plane_wave_BC(int j, int i, grid * simulation)
     double w0 = simulation->w0;
     double Gamma = simulation->Gamma;
     double complex K = I*simulation->k;
-    double complex W = I*w0 + 0.5*Gamma;
     double complex p = -I*(K - W);
+    //W = I*w0 + 0.5*Gamma;
 
     double complex e_t = I*sqrt(0.5*Gamma)*(cexp(-K*t)-cexp(-W*t))/p;
     double complex sum = 0;
@@ -127,16 +161,9 @@ void initialize_e0(grid * simulation)
             exit(EXIT_FAILURE);
         }
 
-        int progress = 0;
         for(int j=0; j<simulation->Ny; j++)
         {
             simulation->e0[j] = e0(j, simulation);
-
-            if(j%(simulation->Ny/10)==0)
-            {
-                printf("%s: %i%% prepared...\r", __func__, progress*10); fflush(stdout);
-                progress++;
-            }
         }
     }
     else //two different exponential wavepackets
@@ -149,25 +176,15 @@ void initialize_e0(grid * simulation)
             exit(EXIT_FAILURE);
         }
 
-        int progress = 0;
         for(int j=0; j<simulation->Ny; j++)
         {
 	    simulation->k = simulation->k1; simulation->alpha = simulation->alpha1;
             simulation->e0_1[j] = e0(j, simulation);
 	    simulation->k = simulation->k2; simulation->alpha = simulation->alpha2;
             simulation->e0_2[j] = e0(j, simulation);
-
-            if(j%(simulation->Ny/10)==0)
-            {
-                printf("%s: %i%% prepared...\r", __func__, progress*10); fflush(stdout);
-                progress++;
-            }
         }
     }
     //TODO: add other I.C. here
-
-    //wash out the status report
-    //printf("                                                                           \r"); fflush(stdout);
 }
 
 
@@ -181,16 +198,9 @@ void initialize_e1(grid * simulation)
         exit(EXIT_FAILURE);
     }
 
-    int progress = 0;
     for(int j=0; j<simulation->Ny; j++)
     {
         simulation->e1[j] = e1(j, simulation);
-
-        if(j%(simulation->Ny/10)==0)
-        {
-            printf("%s: %i%% prepared...\r", __func__, progress*10); fflush(stdout);
-            progress++;
-        }
     }
 }
 
@@ -229,7 +239,6 @@ void boundary_condition(grid * simulation)
     simulation->psix0_x_size = simulation->nx+1;
     simulation->psix0_y_size = 0;
 
-    int progress = 0;
     for(int j=0; j<simulation->Ny; j++)
     {
         simulation->psix0[j] = calloc(simulation->nx+1, sizeof(*simulation->psix0[j])); 
@@ -241,40 +250,39 @@ void boundary_condition(grid * simulation)
         simulation->psix0_y_size++;
     }
 
+    double start = getRealTime();
+    #ifdef __FDTD_OPENMP_SUPPORT__
+      #pragma omp parallel
+      {
+         #pragma omp for collapse(2)
+    #endif
     for(int j=0; j<simulation->psix0_y_size; j++)
     {
-        switch(simulation->init_cond)
-	{
-	   case 1: { //two-photon plane wave
-                 for(int i=0; i<simulation->psix0_x_size; i++)
-                     simulation->psix0[j][i] = plane_wave_BC(j, i, simulation);
-	      }
-	      break;
-	   case 2: { //single-photon exponential wavepacket
-                 for(int i=0; i<simulation->psix0_x_size; i++)
-                     simulation->psix0[j][i] = exponential_BC(j, i, simulation);
-	      }
-	      break;
-	   case 3: { //two-photon exponential wavepacket
-                 for(int i=0; i<simulation->psix0_x_size; i++)
-                     simulation->psix0[j][i] = two_exponential_BC(j, i, simulation);
-	      }
-	      break;
-	   default: { //bad input
-              fprintf(stderr, "%s: invalid option. Abort!\n", __func__);
-              exit(EXIT_FAILURE);
-	      } 
-        }
-
-        if(j%(simulation->Ny/10)==0)
+        for(int i=0; i<simulation->psix0_x_size; i++)
         {
-            printf("%s: %i%% prepared...\r", __func__, progress*10); fflush(stdout);
-            progress++;
+           switch(simulation->init_cond)
+	   {
+              //two-photon plane wave
+	      case 1: { simulation->psix0[j][i] = plane_wave_BC(j, i, simulation); }
+	         break;
+
+              //single-photon exponential wavepacket
+	      case 2: { simulation->psix0[j][i] = exponential_BC(j, i, simulation); }
+	         break;
+
+              //two-photon exponential wavepacket
+	      case 3: { simulation->psix0[j][i] = two_exponential_BC(j, i, simulation); }
+	         break;
+
+              default: { /* bad input, but sanity_check ensures we never arrives here */ }
+           }
         }
     }
-
-    //wash out the status report
-    printf("                                                                           \r"); fflush(stdout);
+    #ifdef __FDTD_OPENMP_SUPPORT__
+      }
+    #endif
+    double end = getRealTime();
+    printf("FDTD: %s spent: %f s (getRealTime)\n", __func__, end-start);
 }
 
 
@@ -334,12 +342,11 @@ void sanity_check(grid * simulation)
     }
 
     //it is meaningless if one performs the computation without saving any result
-    if(!simulation->save_chi && !simulation->save_psi && !simulation->save_psi_square_integral \
-       && !simulation->save_psi_binary && !simulation->measure_NM)
+    if(!simulation->save_chi && !simulation->save_chi_map && !simulation->save_psi\
+       && !simulation->save_psi_square_integral && !simulation->save_psi_binary && !simulation->measure_NM)
     {
         //fprintf(stderr, "%s: either save_chi or save_psi has to be 1. Abort!\n", __func__);
-        fprintf(stderr, "%s: need to specify the output options (available: save_chi, save_psi, save_psi_square_integral,\
-                         save_psi_binary, measure_NM). Abort!\n", __func__);
+        fprintf(stderr, "%s: need to specify the output options (available: save_chi, save_chi_map, save_psi, save_psi_square_integral, save_psi_binary, measure_NM). Abort!\n", __func__);
         exit(EXIT_FAILURE);
     }
 
@@ -366,6 +373,12 @@ void sanity_check(grid * simulation)
         //k is a mandatory parameter when init_cond is 1 or 2
         fprintf(stderr, "%s: the incident frequency k must be given when init_cond is 1 or 2. Abort!\n", __func__);
         exit(EXIT_FAILURE);
+    }
+
+    if(simulation->init_cond == 1 && simulation->save_psi_square_integral == 1)
+    {
+        fprintf(stderr, "%s: no support (yet) for save_psi_square_integral with init_cond=1. Abort!\n", __func__);
+	exit(EXIT_FAILURE);
     }
 
     if(simulation->init_cond == 2) 
@@ -412,12 +425,17 @@ void sanity_check(grid * simulation)
 
     }
 
-    //calculate_NM_measure only supports well-defined (normalized) wavepackets
-    //TODO: allow init_cond=3
-    if(simulation->measure_NM && (simulation->init_cond!=2))// || simulation->init_cond!=3))
+    //calculate_NM_measure only supports well-defined (normalized) single-photon wavepacket
+    if(simulation->measure_NM && (simulation->init_cond!=2))
     {
         fprintf(stderr, "%s: to calculate lambda and mu for NM measures, set init_cond to be 2. Abort!\n", __func__);
         exit(EXIT_FAILURE);
+    }
+
+    if(simulation->Nth<=0)
+    {
+        fprintf(stderr, "%s: the number of threads (Nth) must be at least 1. Abort!\n", __func__);
+       exit(EXIT_FAILURE);
     }
 }
 
@@ -502,6 +520,8 @@ grid * initialize_grid(const char * filename)
    FDTDsimulation->origin_index  = FDTDsimulation->Nx + FDTDsimulation->nx + 1;
    FDTDsimulation->save_chi      = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_chi") ? \
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_chi")) : 0); //default: off
+   FDTDsimulation->save_chi_map  = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_chi_map") ? \
+                                  atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_chi_map")) : 0); //default: off
    FDTDsimulation->save_psi      = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi") ? \
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi")) : 0); //default: off
    FDTDsimulation->save_psi_square_integral = (lookupValue(FDTDsimulation->parameters_key_value_pair, "save_psi_square_integral") ? \
@@ -520,11 +540,18 @@ grid * initialize_grid(const char * filename)
 	                           strtod(lookupValue(FDTDsimulation->parameters_key_value_pair, "alpha2"), NULL) : 0); //default: 0
    FDTDsimulation->Tstep         = (lookupValue(FDTDsimulation->parameters_key_value_pair, "Tstep") ? \
 				   atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "Tstep")) : 0); //default: 0
+   FDTDsimulation->Nth           = (lookupValue(FDTDsimulation->parameters_key_value_pair, "Nth") ? \
+                                  atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "Nth")) : 1); //default: 1
    FDTDsimulation->measure_NM    = (lookupValue(FDTDsimulation->parameters_key_value_pair, "measure_NM") ? \
 	                           atoi(lookupValue(FDTDsimulation->parameters_key_value_pair, "measure_NM")) : 0); //default: off
+   W = I*FDTDsimulation->w0 + 0.5*FDTDsimulation->Gamma; //declared in main.c
 
    //check the validity of parameters
    sanity_check(FDTDsimulation);
+
+   #ifdef __FDTD_OPENMP_SUPPORT__
+   initialize_OpenMP_team(FDTDsimulation);
+   #endif
 
    //calculate the normalization constant
    if(FDTDsimulation->init_cond==3) calculate_normalization_const(FDTDsimulation);
@@ -662,7 +689,7 @@ void save_psi_binary(grid * simulation, const char * filename)
 
     for(int j=0; j<simulation->Ny; j+=(simulation->Tstep+1))
     {
-        fwrite(simulation->psi[j] + simulation->minus_a_index, sizeof(double complex), array_size, f);
+        fwrite((simulation->psi[j] + simulation->minus_a_index), sizeof(double complex), array_size, f);
     }
 
     fclose(f);
@@ -733,6 +760,66 @@ void save_chi(grid * simulation, const char * filename, double (*part)(double co
 }
 
 
+//this function computes the two-photon wavefunction as a 2D map,
+//
+//     \chi (x1, x2, T),  //T is taken such that the wavefronts are aligned at the boundary
+//
+//the calculation of which is done on the fly and then writes to a file, 
+//so no extra memory is allocated; the third argument "part" can be any
+//function converting a complex to a double, e.g., creal, cimag, cabs, etc.
+//STILL UNDER CONSTRUCTION!!!!!!
+void save_chi_map(grid * simulation, const char * filename, double (*part)(double complex))
+{
+    char * str = strdup(filename);
+    str = realloc(str, (strlen(filename)+19)*sizeof(char) );
+
+    if(part == &creal)
+       strcat(str, ".re_chi_map.out");
+    else if(part == &cimag)
+       strcat(str, ".im_chi_map.out");
+    else if(part == &cabs)
+       strcat(str, ".abs_chi_map.out");
+    else
+    {
+       fprintf(stderr, "%s: Warning: default filename is used.\n", __func__);
+       strcat(str, ".chi_map.out");
+    }
+
+    FILE * f = fopen(str, "w");
+
+    //determine the map size
+    //int j = simulation->Ny-1; //the time slice
+    ////int j = (simulation->Ny-1 < simulation->Nx - simulation->nx/2 ? simulation->Ny-1 : simulation->Nx - simulation->nx/2); //the time slice
+    //int temp_1 = (int)ceil(simulation->Nx/2.0-simulation->nx/4.0);
+    //int temp_2 = j - simulation->nx/2;
+    //int L = (temp_1<temp_2 ? temp_1 : temp_2);
+    int j = (int)ceil(simulation->Nx/2.0-3*simulation->nx/4.0);
+    int L = (int)ceil(simulation->Nx/2.0-simulation->nx/4.0);
+    for(int i=0; i<=L; i+=simulation->Tstep+1) //change L to largest integer multiple of Tstep+1 for nonzero Tstep
+    {
+       if(i+simulation->Tstep+1>L)
+       {
+          L=i; break;
+       }
+    }
+    printf("FDTD: %s: the box is of dimension 2L*2L with L=%i.\n", __func__, L);
+
+    //compute chi(x1, x2, t) 
+    //be careful: x1 & x2 here are array indices!!!
+    for(int x2=simulation->origin_index-L; x2<=simulation->origin_index+L; x2+=(simulation->Tstep+1))
+    {
+        for(int x1=simulation->origin_index-L; x1<=simulation->origin_index+L; x1+=(simulation->Tstep+1))
+        {
+            fprintf( f, "%.5g ", part(chi(j, x1, x2, simulation)) );
+        }
+        fprintf( f, "\n");
+    }
+
+    fclose(f);
+    free(str);
+}
+
+
 void print_grid(grid * simulation)
 {
     printf("nx = %d\n", simulation->nx); 
@@ -766,9 +853,158 @@ void save_psi_square_integral(grid * simulation, const char * filename)
     int Tmax = (simulation->Ny-1 < simulation->Nx - simulation->nx/2 ? simulation->Ny-1 : simulation->Nx - simulation->nx/2);
     FILE * f = fopen(str, "w");
 
-    for(int j=0; j<Tmax; j++)
-       fprintf( f, "%.10g\n", psi_square_integral(j, simulation) );
+    double * result = malloc(Tmax *sizeof(*result));
+    if(!result)
+    {
+       fprintf(stderr, "rare event: malloc fails in %s, save the result serially...\n", __func__);
+       for(int j=0; j<Tmax; j++)
+          fprintf( f, "%.10g\n", psi_square_integral(j, simulation) );
+    }
+    else
+    {
+       #pragma omp parallel for
+       for(int j=0; j<Tmax; j++)
+          result[j] = psi_square_integral(j, simulation);
+        
+       for(int j=0; j<Tmax; j++)
+          fprintf( f, "%.10g\n", result[j] );
+    }
+
+    free(result);
+    fclose(f);
+    free(str);
+}
+
+
+//check the normalization factor in the two-excitation sector
+//\int dx |\psi(x,t)|^2 + \iint dx1 dx2 |\chi(x1, x2, t)|^2 = 1 should hold for all time t
+void check_normalization(grid * simulation)
+{
+    //determine the map size
+    int L = (int)ceil(simulation->Nx/2.0-simulation->nx/4.0);
+    int j = L-simulation->nx/2; //after this time the two photons will go outside of box
+    printf("FDTD: %s: the box is of dimension 2L*2L with L=%i.\n", __func__, L);
+    printf("FDTD: %s: perform the check at t=%i Delta...\n", __func__, j);
+
+    double abs_psi_square = psi_square_integral(j, simulation);
+    double abs_chi_square = 0;
+
+    //compute \iint_{-L}^{+L} dx1 dx2 |chi(x1, x2, t=j*Delta)|^2
+    //be careful: x1 & x2 here are array indices!!!
+    #pragma omp parallel for collapse(2), reduction(+:abs_chi_square)
+    for(int x2=simulation->origin_index-L; x2<=simulation->origin_index+L; x2++)
+    {
+        for(int x1=simulation->origin_index-L; x1<=simulation->origin_index+L; x1++)
+        {
+            double abs_chi = cabs(chi(j, x1, x2, simulation));
+	    double trapezoidal_2D = 1.0;
+
+            if(x1==simulation->origin_index-L || x1==simulation->origin_index+L)
+	       trapezoidal_2D *= 0.5;
+            if(x2==simulation->origin_index-L || x2==simulation->origin_index+L)
+	       trapezoidal_2D *= 0.5;
+
+	    abs_chi_square += trapezoidal_2D*abs_chi*abs_chi;
+        }
+    }
+    abs_chi_square *= simulation->Delta * simulation->Delta;
+
+    printf("FDTD: %s: the 1-photon part is %.5f, and the 2-photon part is %.5f,\n", __func__, abs_psi_square, abs_chi_square);
+    printf("FDTD: %s: so the normalization factor (sum of them) is %.5f.\n", __func__, abs_psi_square+abs_chi_square);
+    if(fabs(1.0-abs_psi_square-abs_chi_square)>0.01) // <1% error is acceptable
+       fprintf(stderr, "FDTD: %s: *** WARNING: normalization factor deviates too much, the result may not be faithful ***\n", __func__);
+}
+
+
+//EXPERIMENTAL!!!!
+void save_BIC(grid * simulation, const char * filename)
+{
+    char * str = strdup(filename);
+    str = realloc(str, (strlen(filename)+11)*sizeof(char) );
+    strcat(str, ".BIC.out");
+
+    int Tmax = 0;
+    if(2*simulation->Nx >= 3*simulation->nx)
+       Tmax = (simulation->Ny-1 < simulation->Nx - 3*simulation->nx/2 ? simulation->Ny-1 : simulation->Nx - 3*simulation->nx/2);
+       //Tmax = simulation->Nx - 3*simulation->nx/2;
+    else
+    {
+       fprintf(stderr, "FDTD: %s: 2Nx>=3nx is not satisfied, skip this function.\n", __func__);
+       return;
+    }
+
+    FILE * f = fopen(str, "w");
+
+    //#pragma omp parallel for
+    //each function call is parallelized, so don't parallelize this loop
+    for(int j=0; j<Tmax; j+=simulation->Tstep+1)
+    {
+       double psi_part=0, chi_part=0;
+       psi_part = psi_square_integral(j, simulation);
+       chi_part = chi_square_double_integral(j, simulation);
+       fprintf( f, "%.10g\n", psi_part+chi_part );
+    }
 
     fclose(f);
     free(str);
+}
+
+
+//calculate the photon intensity <a^\dagger(x)a(x)> with x in [-L, L]
+void save_photon_intensity(grid * simulation, const char * filename)
+{
+    char * str1 = strdup(filename);
+    char * str2 = strdup(filename);
+    str1 = realloc(str1, (strlen(filename)+22)*sizeof(char) );
+    str2 = realloc(str2, (strlen(filename)+23)*sizeof(char) );
+    strcat(str1, ".intensity_diag.out");
+    strcat(str2, ".intensity_cross.out");
+
+    FILE * f1 = fopen(str1, "w");
+    FILE * f2 = fopen(str2, "w");
+    //double * chi_part = malloc((L+simulation->nx+1)*sizeof(*chi_part));
+    //if(!chi_part)
+    //{
+    //   fprintf(stderr, "FDTD: %s: malloc fails, skip this function...\n", __func__);
+    //   return;
+    //}
+    
+    //integration limit
+    //int L = simulation->Nx - simulation->nx;
+    int L = (int)ceil(simulation->Nx/2.0-simulation->nx/4.0);
+    for(int i=0; i<=L; i+=simulation->Tstep+1) //change L to largest integer multiple of Tstep+1 for nonzero Tstep
+    {
+       if(i+simulation->Tstep+1>L)
+       {
+          L=i; break;
+       }
+    }
+    printf("FDTD: %s: the 1D box is of size 2L with L=%i.\n", __func__, L);
+
+    //take the last time slice at which \chi is meaningful; in line with save_chi_map
+    int j = (int)ceil(simulation->Nx/2.0-3*simulation->nx/4.0);
+    //int j = 0;
+    //if(2*simulation->Nx >= 3*simulation->nx)
+    //   j = (simulation->Ny-1 < simulation->Nx - 3*simulation->nx/2 ? simulation->Ny-1 : simulation->Nx - 3*simulation->nx/2);
+    //else
+    //{
+    //   fprintf(stderr, "FDTD: %s: 2Nx>=3nx is not satisfied, skip this function.\n", __func__);
+    //   return;
+    //}
+
+    //chi_square_single_integral is parallelized, so don't parallelize this loop
+    for(int i=simulation->origin_index-L; i<simulation->origin_index+L; i+=(simulation->Tstep+1))
+    {
+       double complex psi = simulation->psi[j][i];
+       fprintf(f1, "%.10g\n", cabs(psi)*cabs(psi) + chi_square_single_integral(j, i, simulation));
+       double complex psi_m = simulation->psi[j][2*simulation->origin_index-i];
+       double complex temp = conj(psi)*psi_m + chi_square_single_integral_mirrored(j, i, simulation);
+       fprintf(f2, "%.10g + %.10g *I\n", creal(temp), cimag(temp));
+    }
+
+    //free(chi_part);
+    fclose(f1);
+    fclose(f2);
+    free(str1);
+    free(str2);
 }

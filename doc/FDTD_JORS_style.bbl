@@ -41,19 +41,26 @@ Tufarelli T, Kim M~S, and Ciccarello F, 2014, {Non-Markovianity of a quantum
 Fang Y~L~L and Baranger H~U, 2015, {Waveguide QED: Power spectra and
   correlations of two photons scattered off multiple distant qubits and a
   mirror}, Phys Rev A 91(5): 053845, \doi{10.1103/PhysRevA.91.053845}.
+  \href{http://link.aps.org/doi/10.1103/PhysRevA.96.059904}{\textit{ibid.}
+  \textbf{96}, 059904(E) (2017).}
 
 \bibitem{GrimsmoPRL15}
 Grimsmo A~L, 2015, {Time-Delayed Quantum Feedback Control}, Phys Rev Lett
   115(6): 060402, \doi{10.1103/PhysRevLett.115.060402}.
 
 \bibitem{RamosPRA16}
-Ramos T, Vermersch B, Hauke P, Pichler H, and Zoller P, 2016, Non-Markovian
-  dynamics in chiral quantum networks with spins and photons, Phys Rev A 93:
+Ramos T, Vermersch B, Hauke P, Pichler H, and Zoller P, 2016, {Non-Markovian
+  dynamics in chiral quantum networks with spins and photons}, Phys Rev A 93:
   062104, \doi{10.1103/PhysRevA.93.062104}.
+
+\bibitem{PichlerPRL16}
+Pichler H and Zoller P, 2016, {Photonic Circuits with Time Delays and Quantum
+  Feedback}, Phys Rev Lett 116(9): 093601,
+  \doi{10.1103/PhysRevLett.116.093601}.
 
 \bibitem{FangNM17}
 Fang Y~L~L, Ciccarello F, and Baranger H~U, 2017, {Non-Markovian dynamics of a
-  qubit due to single-photon scattering in a waveguide}. To appear on arXiv.
+  qubit due to single-photon scattering in a waveguide}. \eprint{1707.05946}.
 
 \bibitem{Zubik_Kowal_Sch08}
 Zubik-Kowal B, 2008, Delay partial differential equations, Scholarpedia 3(4):
@@ -73,14 +80,55 @@ Press W~H, Teukolsky S~A, Vetterling W~T, and Flannery B~P, 2007,
   \emph{Numerical Recipes: The Art of Scientific Computing}, Cambridge
   University Press, 3rd edition.
 
+\bibitem{RivasRPP14}
+Rivas {\'A}, Huelga S~F, and Plenio M~B, 2014, {Quantum non-Markovianity:
+  characterization, quantification and detection}, Rep Prog Phys 77(9): 094001,
+  \doi{10.1088/0034-4885/77/9/094001}.
+
+\bibitem{BreuerRMP16}
+Breuer H~P, Laine E~M, Piilo J, and Vacchini B, 2016, {Colloquium:
+  Non-Markovian dynamics in open quantum systems}, Rev Mod Phys 88(2): 021002,
+  \doi{10.1103/RevModPhys.88.021002}.
+
+\bibitem{deVegaRMP17}
+de~Vega I and Alonso D, 2017, {Dynamics of non-Markovian open quantum systems},
+  Rev Mod Phys 89(1): 015001, \doi{10.1103/RevModPhys.89.015001}.
+
 \bibitem{NISThandbook}
 Olver F~W~J, Lozier D~W, Boisvert R~F, and Clark C~W, 2010, \emph{NIST Handbook
-  of Mathematical Functions Hardback and CD-ROM}, Cambridge University Press.
+  of Mathematical Functions}, Cambridge University Press.
+
+\bibitem{OurBIC}
+Ciccarello F, Calaj\`{o} G, Fang Y-L L, and Baranger H U, in preparation.
 
 \bibitem{LorenzoPRA13}
 Lorenzo S, Plastina F, and Paternostro M, 2013, {Geometrical characterization
   of non-Markovianity}, Phys Rev A 88(2): 020102,
   \doi{10.1103/PhysRevA.88.020102}.
+
+\bibitem{FangPRA15err}
+Fang Y~L~L and Baranger H~U, 2017, Erratum: Waveguide QED: Power spectra and
+  correlations of two photons scattered off multiple distant qubits and a
+  mirror [Phys. Rev. A 91, 053845 (2015)], Phys Rev A 96: 059904,
+  \doi{10.1103/PhysRevA.96.059904}.
+
+\bibitem{GustafssonSci14}
+Gustafsson M~V, Aref T, Kockum A~F, Ekstr{\"o}m M~K, Johansson G, and Delsing
+  P, 2014, {Propagating phonons coupled to an artificial atom}, Science 346(6):
+  207, \doi{10.1126/science.1257219}.
+
+\bibitem{FriskKockumPRA14}
+Frisk~Kockum A, Delsing P, and Johansson G, 2014, Designing frequency-dependent
+  relaxation rates and {L}amb shifts for a giant artificial atom, Phys Rev A
+  90(1): 013837, \doi{10.1103/PhysRevA.90.013837}.
+
+\bibitem{GuoPRA17}
+Guo L, Grimsmo A, Kockum A~F, Pletyukhov M, and Johansson G, 2017, Giant
+  acoustic atom: A single quantum system with a deterministic time delay, Phys
+  Rev A 95: 053821, \doi{10.1103/PhysRevA.95.053821}.
+
+\bibitem{GiantAtom}
+Fang Y-L L, unpublished.
 
 \bibitem{PhotonicCrystalBook}
 Joannopoulos J~D, Johnson S~G, Winn J~N, and Meade R~D, 2008, \emph{Photonic
