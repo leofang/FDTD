@@ -75,6 +75,6 @@ For the OpenMP implementation, we parallelize the calculation on a given wavefro
 ![](doc/FDTD_marching_pthread.gif)
 
 ## License
-This code is released under the MIT license. For the academic uses, *citation to **[arXiv:1707.05943](https://arxiv.org/abs/1707.05943)** and **[arXiv:1707.05946](https://arxiv.org/abs/1707.05946)** is strongly encouraged and acknowledged.* 
+This code is released under the MIT license. For the academic uses, *citations to **[Fang et al., New J. Phys. 20, 043035 (2018)](https://doi.org/10.1088/1367-2630/aaba5d)** and **[Fang, Comput. Phys. Commun. (2018)](https://doi.org/10.1016/j.cpc.2018.08.018)** are strongly encouraged and acknowledged.* 
 
 Copyright (C) 2018 Leo Fang.
