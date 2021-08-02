@@ -13,7 +13,7 @@ date-released: 2018-11-09
 url: "https://github.com/leofang/FDTD"
 
 references:
-  - type: paper
+  - type: article
     authors:
       - family-names: "Fang"
         given-names: "Yao-Lung L."
@@ -25,7 +25,7 @@ references:
     pages: 422
     year: 2019
 
-  - type: paper
+  - type: article
     authors:
       - family-names: "Fang"
         given-names: "Yao-Lung L."
