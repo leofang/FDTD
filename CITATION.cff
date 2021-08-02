@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+message: "Please cite this work as shown below."
+
+authors:
+- family-names: "Fang"
+  given-names: "Yao-Lung L."
+  orcid: "https://orcid.org/0000-0001-7191-1651"
+title: "FDTD: Solving 1+1D delay PDE in parallel"
+version:
+commit: d02ca9c
+doi: 10.1016/j.cpc.2018.08.018
+date-released: 2018-11-09
+url: "https://github.com/leofang/FDTD"
+
+references:
+  - type: paper
+    authors:
+      - family-names: "Fang"
+        given-names: "Yao-Lung L."
+        orcid: "https://orcid.org/0000-0001-7191-1651"
+    title: "FDTD: Solving 1+1D delay PDE in parallel"
+    doi: 10.1016/j.cpc.2018.08.018
+    journal: "Computer Physics Communications"
+    volume: 235
+    pages: 422
+    year: 2019
+
+  - type: paper
+    authors:
+      - family-names: "Fang"
+        given-names: "Yao-Lung L."
+        orcid: "https://orcid.org/0000-0001-7191-1651"
+      - family-names: "Ciccarello"
+        given-names: "Francesco"
+        orcid: "https://orcid.org/0000-0002-6061-1255"
+      - family-names: "Baranger"
+        given-names: "Harold U."
+    title: "Non-Markovian dynamics of a qubit due to single-photon scattering in a waveguide"
+    doi: 10.1088/1367-2630/aaba5d
+    journal: "New Journal of Physics"
+    volume: 20
+    pages: 043035
+    year: 2018
